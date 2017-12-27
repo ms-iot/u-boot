@@ -1449,7 +1449,11 @@ int fsl_mc_ldpaa_exit(bd_t *bd)
 	bool mc_boot_status = false;
 
 	if (bd && mc_lazy_dpl_addr && !fsl_mc_ldpaa_exit(NULL)) {
-		mc_apply_dpl(mc_lazy_dpl_addr);
+		err = mc_apply_dpl(mc_lazy_dpl_addr);
+#ifdef CONFIG_FSL_MC_ENET
+		if (!err)
+			fdt_fixup_board_enet(working_fdt);
+#endif
 		mc_lazy_dpl_addr = 0;
 	}
 

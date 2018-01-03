@@ -147,6 +147,20 @@
 
 /* Command line configuration */
 
+/* SATA */
+#ifndef SPL_NO_SATA
+#define CONFIG_LIBATA
+#define CONFIG_SCSI_AHCI
+#define CONFIG_SCSI_AHCI_PLAT
+
+#define CONFIG_SYS_SATA				AHCI_BASE_ADDR
+
+#define CONFIG_SYS_SCSI_MAX_SCSI_ID		1
+#define CONFIG_SYS_SCSI_MAX_LUN			1
+#define CONFIG_SYS_SCSI_MAX_DEVICE		(CONFIG_SYS_SCSI_MAX_SCSI_ID * \
+						CONFIG_SYS_SCSI_MAX_LUN)
+#endif
+
 /* MMC */
 #ifndef SPL_NO_MMC
 #ifdef CONFIG_MMC
@@ -202,7 +216,8 @@
 #ifndef CONFIG_SPL_BUILD
 #define BOOT_TARGET_DEVICES(func) \
 	func(MMC, mmc, 0) \
-	func(USB, usb, 0)
+	func(USB, usb, 0) \
+	func(SCSI, scsi, 0)
 #include <config_distro_bootcmd.h>
 #endif
 

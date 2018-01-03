@@ -69,6 +69,18 @@
 #define CONFIG_ENV_SECT_SIZE		0x40000
 #endif
 
+/* SATA */
+#define CONFIG_LIBATA
+#define CONFIG_SCSI_AHCI
+#define CONFIG_SCSI_AHCI_PLAT
+
+#define CONFIG_SYS_SATA				AHCI_BASE_ADDR
+
+#define CONFIG_SYS_SCSI_MAX_SCSI_ID		1
+#define CONFIG_SYS_SCSI_MAX_LUN			1
+#define CONFIG_SYS_SCSI_MAX_DEVICE		(CONFIG_SYS_SCSI_MAX_SCSI_ID * \
+						CONFIG_SYS_SCSI_MAX_LUN)
+
 /* I2C */
 #define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_MXC
@@ -91,7 +103,8 @@
 #ifndef CONFIG_SPL_BUILD
 #define BOOT_TARGET_DEVICES(func) \
 	func(MMC, mmc, 0) \
-	func(USB, usb, 0)
+	func(USB, usb, 0) \
+	func(SCSI, scsi, 0)
 #include <config_distro_bootcmd.h>
 #endif
 

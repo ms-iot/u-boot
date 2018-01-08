@@ -18,6 +18,7 @@
 #define SPL_NO_SATA
 #define SPL_NO_QSPI
 #define SPL_NO_IFC
+#define CONFIG_SYS_DCACHE_OFF
 #undef CONFIG_DISPLAY_CPUINFO
 #endif
 

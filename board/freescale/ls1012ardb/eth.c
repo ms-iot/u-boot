@@ -23,6 +23,7 @@
 
 void reset_phy(void)
 {
+#ifdef CONFIG_TARGET_LS1012ARDB
 	/* Through reset IO expander reset both RGMII and SGMII PHYs */
 	i2c_reg_write(I2C_MUX_IO2_ADDR, 6, __PHY_MASK);
 	i2c_reg_write(I2C_MUX_IO2_ADDR, 2, __PHY_ETH2_MASK);
@@ -31,6 +32,7 @@ void reset_phy(void)
 	mdelay(10);
 	i2c_reg_write(I2C_MUX_IO2_ADDR, 2, 0xFF);
 	mdelay(50);
+#endif
 }
 
 int board_eth_init(bd_t *bis)

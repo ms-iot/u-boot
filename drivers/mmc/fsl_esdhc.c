@@ -24,6 +24,10 @@
 #include <dm.h>
 #include <asm-generic/gpio.h>
 
+#if !CONFIG_IS_ENABLED(BLK)
+#include "mmc_private.h"
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #define SDHCI_IRQ_EN_BITS		(IRQSTATEN_CC | IRQSTATEN_TC | \
@@ -1027,6 +1031,9 @@ static int fsl_esdhc_probe(struct udevice *dev)
 	fdt_addr_t addr;
 	unsigned int val;
 	struct mmc *mmc;
+#if !CONFIG_IS_ENABLED(BLK)
+	struct blk_desc *bdesc;
+#endif
 	int ret;
 
 	addr = dev_read_addr(dev);
@@ -1122,6 +1129,26 @@ static int fsl_esdhc_probe(struct udevice *dev)
 	mmc = &plat->mmc;
 	mmc->cfg = &plat->cfg;
 	mmc->dev = dev;
+#if !CONFIG_IS_ENABLED(BLK)
+	mmc->priv = priv;
+
+	/* Setup dsr related values */
+	mmc->dsr_imp = 0;
+	mmc->dsr = 0xffffffff;
+	/* Setup the universal parts of the block interface just once */
+	bdesc = mmc_get_blk_desc(mmc);
+	bdesc->if_type = IF_TYPE_MMC;
+	bdesc->removable = 1;
+	bdesc->devnum = mmc_get_next_devnum();
+	bdesc->block_read = mmc_bread;
+	bdesc->block_write = mmc_bwrite;
+	bdesc->block_erase = mmc_berase;
+
+	/* setup initial part type */
+	bdesc->part_type = mmc->cfg->part_type;
+	mmc_list_add(mmc);
+#endif
+
 	upriv->mmc = mmc;
 
 	return esdhc_init_common(priv, mmc);

@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2017 NXP Semiconductors
- * Copyright (C) 2014 Freescale Semiconductor
+ * Copyright 2014 Freescale Semiconductor, Inc.
+ * Copyright 2017 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -1450,10 +1450,8 @@ int fsl_mc_ldpaa_exit(bd_t *bd)
 
 	if (bd && mc_lazy_dpl_addr && !fsl_mc_ldpaa_exit(NULL)) {
 		err = mc_apply_dpl(mc_lazy_dpl_addr);
-#ifdef CONFIG_FSL_MC_ENET
 		if (!err)
 			fdt_fixup_board_enet(working_fdt);
-#endif
 		mc_lazy_dpl_addr = 0;
 	}
 

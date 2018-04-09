@@ -1,0 +1,15 @@
+/*
+ * Copyright 2017 Scalys B.V.
+ * opensource@scalys.com
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
+ */
+
+/dts-v1/;
+#include "grapeboard.dtsi"
+
+/ {
+       chosen {
+               stdout-path = &duart0;
+       };
+};

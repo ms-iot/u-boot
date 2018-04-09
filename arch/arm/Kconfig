@@ -940,6 +940,13 @@ config TARGET_LS1012AFRDM
 	  development platform that supports the QorIQ LS1012A
 	  Layerscape Architecture processor.
 
+config TARGET_GRAPEBOARD
+	bool "Support grapeboard"
+	select ARCH_LS1012A
+	select ARM64
+	help
+	  Support for Scalys LS1012A based Grapeboard platform.
+
 config TARGET_LS1088ARDB
 	bool "Support ls1088ardb"
 	select ARCH_LS1088A
@@ -1255,6 +1262,7 @@ source "board/freescale/ls1046ardb/Kconfig"
 source "board/freescale/ls1012aqds/Kconfig"
 source "board/freescale/ls1012ardb/Kconfig"
 source "board/freescale/ls1012afrdm/Kconfig"
+source "board/scalys/grapeboard/Kconfig"
 source "board/freescale/mx23evk/Kconfig"
 source "board/freescale/mx28evk/Kconfig"
 source "board/freescale/mx31ads/Kconfig"

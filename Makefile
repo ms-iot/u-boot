@@ -767,6 +767,8 @@ endif
 # Always append ALL so that arch config.mk's can add custom ones
 ALL-y += u-boot.srec u-boot.bin u-boot.sym System.map binary_size_check
 
+ALL-$(CONFIG_CONCAT_PBL_UBOOT_IMAGE) += u-boot-with-pbl.bin
+
 ALL-$(CONFIG_ONENAND_U_BOOT) += u-boot-onenand.bin
 ifeq ($(CONFIG_SPL_FSL_PBL),y)
 ALL-$(CONFIG_RAMBOOT_PBL) += u-boot-with-spl-pbl.bin
@@ -1209,6 +1211,14 @@ OBJCOPYFLAGS_u-boot-with-spl-pbl.bin = -I binary -O binary --pad-to=$(CONFIG_SPL
 			  --gap-fill=0xff
 
 u-boot-with-spl-pbl.bin: spl/u-boot-spl.pbl $(UBOOT_BINLOAD) FORCE
+	$(call if_changed,pad_cat)
+	
+	
+#Concatenate PBL and U-boot binaries automatically
+OBJCOPYFLAGS_u-boot-with-pbl.bin := -I binary -O binary --pad-to=$(CONFIG_UBOOT_TEXT_OFFSET) \
+			--gap-fill=0xff
+			
+u-boot-with-pbl.bin: $(srctree)/$(CONFIG_PBL_BINARY_SRC:"%"=%) u-boot.bin FORCE 
 	$(call if_changed,pad_cat)
 
 # PPC4xx needs the SPL at the end of the image, since the reset vector

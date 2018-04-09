@@ -1,0 +1,57 @@
+if TARGET_GRAPEBOARD
+
+config SYS_BOARD
+	default "grapeboard"
+	
+config SYS_VENDOR
+	default "scalys"
+	
+config SYS_SOC
+	default "fsl-layerscape"
+
+config SYS_CONFIG_NAME
+	default "grapeboard"
+	
+menu "Grapeboard configuration options"
+	depends on TARGET_GRAPEBOARD
+
+choice
+	prompt "U-boot environment configuration"
+	default STANDARD_UBOOT_CONFIG
+	
+config STANDARD_UBOOT_CONFIG
+	bool
+	prompt "Standard flash target"
+	
+config RESCUE_UBOOT_CONFIG
+	bool
+	prompt "Rescue flash target"
+	
+endchoice
+
+config CONCAT_PBL_UBOOT_IMAGE
+	bool
+	default y
+	prompt "Concat PBL and U-boot.bin" 
+	help 
+		Enable concatenation of PBL binary 'PBL_BINARY_SRC' and 'u-boot.bin' with offset 'UBOOT_TEXT_OFFSET' into a single binary 'u-boot-with-pbl.bin'.
+	
+config UBOOT_TEXT_OFFSET
+	string
+	depends on CONCAT_PBL_UBOOT_IMAGE
+	default 0x1000
+	prompt "Concatenation offset for U-boot.bin to PBL binary"
+	help
+		See CONCAT_PBL_UBOOT_IMAGE help. Make sure this matches the offset used in the PBI command of the PBL binary and the SYS_TEXT_BASE define.
+	
+config PBL_BINARY_SRC
+	string
+	depends on CONCAT_PBL_UBOOT_IMAGE
+	default "board/scalys/grapeboard/PBL_0x33_0x05_800_250_1000.bin"
+	prompt "See CONCAT_PBL_UBOOT_IMAGE"
+	help
+		See CONCAT_PBL_UBOOT_IMAGE help.
+
+endmenu
+
+endif

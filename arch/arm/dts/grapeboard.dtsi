@@ -1,0 +1,66 @@
+/*
+ * Copyright 2017 Scalys B.V.
+ * opensource@scalys.com
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
+ */
+
+/include/ "fsl-ls1012a.dtsi"
+
+/ {
+	model = "LS1012A Grape Board";
+	aliases {
+		spi0 = &qspi;
+		spi1 = &dspi0;
+	};
+};
+
+&qspi {
+	bus-num = <0>;
+	status = "okay";
+
+	qflash0: s25fl128s@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "spi-flash";
+		spi-max-frequency = <20000000>;
+		reg = <0>;
+	};
+};
+
+&dspi0 {
+	bus-num = <0>;
+	status = "okay";
+};
+
+&i2c0 {
+	status = "okay";
+};
+
+&i2c1 {
+	status = "disabled";
+};
+
+&duart0 {
+	status = "okay";
+};
+
+&duart1 {
+	status = "disabled";
+};
+
+&esdhc0 {
+	status = "okay";
+};
+
+&esdhc1 {
+	status = "disabled";
+};
+
+&usb0 {
+	status = "disabled";
+};
+
+&usb1 {
+	status = "okay";
+};

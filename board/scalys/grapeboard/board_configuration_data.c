@@ -83,45 +83,76 @@ int add_mac_addressess_to_env(const void* blob)
 	return 0;
 }
 
-struct udevice* sel_rescue_qspi_flash(bool sel_rescue) {
-	struct ccsr_gpio *pgpio = (void *)(CONFIG_SYS_GPIO2);
-	struct udevice *rescue_flash_dev,*bus_dev;
+const char* get_qspi_flash_name(void)
+{
+	struct udevice *flash_dev, *bus_dev;
+	struct spi_flash *flash;
 	int ret = 0;
-	unsigned int bus = 0;
-	unsigned int cs = 0;
-	unsigned int speed = 0;
-	unsigned int mode = 0;
+	unsigned int bus = CONFIG_SF_DEFAULT_BUS;
+	unsigned int cs = CONFIG_SF_DEFAULT_CS;
+	unsigned int speed = CONFIG_SF_DEFAULT_SPEED;
+	unsigned int mode = CONFIG_SF_DEFAULT_MODE;
 
 	/* Remove previous DM device */
-	ret = spi_find_bus_and_cs(bus, cs, &bus_dev, &rescue_flash_dev);
+	ret = spi_find_bus_and_cs(bus, cs, &bus_dev, &flash_dev);
 	if (!ret) {
-		device_remove(rescue_flash_dev, DM_REMOVE_NORMAL);
+		device_remove(flash_dev, DM_REMOVE_NORMAL);
 	}
 
-	setbits_be32(&pgpio->gpdir, QSPI_MUX_N_MASK);
-	if (sel_rescue == true) {
-		/* Change chip select to rescue QSPI NOR flash */
-		setbits_be32(&pgpio->gpdat, QSPI_MUX_N_MASK);
-	} else {
-		/* Revert chip select muxing to standard QSPI flash */
-		clrbits_be32(&pgpio->gpdat, QSPI_MUX_N_MASK);
-		/* Delay required (to meet RC time for button debouncing) before probing flash again.
-		 * May be removed but the primary flash is only available after delay */
-		udelay(75000);
-	}
-
-	/* Probe new flash */
-	ret = spi_flash_probe_bus_cs(bus, cs, speed, mode, &rescue_flash_dev);
+	/* Probe flash */
+	ret = spi_flash_probe_bus_cs(bus, cs, speed, mode, &flash_dev);
 	if (ret != 0) {
 		printf("probe failed\n");
 		return NULL;
 	}
 
-	return rescue_flash_dev;
+	flash = dev_get_uclass_priv(flash_dev);
 
+	return flash->name;
 }
 
+struct udevice* select_qspi_flash_device(enum grapeboard_flash_types flash_type)
+{
+	struct ccsr_gpio *pgpio = (void *)(CONFIG_SYS_GPIO2);
+	struct udevice *flash_dev,*bus_dev;
+	int ret = 0;
+	unsigned int bus = CONFIG_SF_DEFAULT_BUS;
+	unsigned int cs = CONFIG_SF_DEFAULT_CS;
+	unsigned int speed = CONFIG_SF_DEFAULT_SPEED;
+	unsigned int mode = CONFIG_SF_DEFAULT_MODE;
 
+	/* Remove previous DM device */
+	ret = spi_find_bus_and_cs(bus, cs, &bus_dev, &flash_dev);
+	if (!ret) {
+		device_remove(flash_dev, DM_REMOVE_NORMAL);
+	}
+
+	setbits_be32(&pgpio->gpdir, QSPI_MUX_N_MASK);
+	switch (flash_type) {
+	case PRIMARY_FLASH_DEVICE:
+		/* Revert chip select muxing to standard QSPI flash */
+		clrbits_be32(&pgpio->gpdat, QSPI_MUX_N_MASK);
+		/* Delay required (to meet RC time for button debouncing) before probing flash again.
+		 * Delay may be removed but the primary flash is only available after the delay */
+		udelay(75000);
+		break;
+	case RESCUE_FLASH_DEVICE:
+		/* Change chip select to rescue QSPI NOR flash */
+		setbits_be32(&pgpio->gpdat, QSPI_MUX_N_MASK);
+		break;
+	default:
+		break;
+	}
+
+	/* Probe new flash */
+	ret = spi_flash_probe_bus_cs(bus, cs, speed, mode, &flash_dev);
+	if (ret != 0) {
+		printf("probe failed\n");
+		return NULL;
+	}
+
+	return flash_dev;
+}
 
 const void* get_boardinfo_rescue_flash(void)
 {
@@ -133,7 +164,7 @@ const void* get_boardinfo_rescue_flash(void)
 	int ret = 0;
 
 	/* Select and probe rescue flash */
-	rescue_flash_dev = sel_rescue_qspi_flash(true);
+	rescue_flash_dev = select_qspi_flash_device(true);
 
 	if (rescue_flash_dev == NULL)
 		goto err_no_free;
@@ -196,7 +227,7 @@ const void* get_boardinfo_rescue_flash(void)
 	}
 
    	/* Select and probe normal flash */
-   	rescue_flash_dev = sel_rescue_qspi_flash(false);
+   	rescue_flash_dev = select_qspi_flash_device(false);
 
 	/* Everything checked out, return the BCD data.
 	 * The caller is expected to free this data */
@@ -209,7 +240,7 @@ err_free:
 err_no_free:	
 
 	/* Select and probe normal flash */
-	rescue_flash_dev = sel_rescue_qspi_flash(false);
+	rescue_flash_dev = select_qspi_flash_device(false);
 	return NULL;
 }
 

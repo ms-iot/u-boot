@@ -15,20 +15,6 @@ config SYS_CONFIG_NAME
 menu "Grapeboard configuration options"
 	depends on TARGET_GRAPEBOARD
 
-choice
-	prompt "U-boot environment configuration"
-	default STANDARD_UBOOT_CONFIG
-	
-config STANDARD_UBOOT_CONFIG
-	bool
-	prompt "Standard flash target"
-	
-config RESCUE_UBOOT_CONFIG
-	bool
-	prompt "Rescue flash target"
-	
-endchoice
-
 config CONCAT_PBL_UBOOT_IMAGE
 	bool
 	default y

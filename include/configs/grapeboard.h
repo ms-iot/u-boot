@@ -52,7 +52,7 @@
 #define CONFIG_LAYERSCAPE_NS_ACCESS
 
 /* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN				(0x40000 + 128 * 1024)
+#define CONFIG_SYS_MALLOC_LEN				(0x60000 + 128 * 1024)
 
 /* QSPI */
 #ifdef CONFIG_QSPI_BOOT
@@ -62,7 +62,6 @@
 #define CONFIG_ENV_SPI_CS					0
 #define CONFIG_ENV_SPI_MAX_HZ				1000000
 #define CONFIG_ENV_SPI_MODE					0x03
-#define CONFIG_SPI_FLASH_SPANSION
 #define CONFIG_FSL_SPI_INTERFACE
 #define CONFIG_SF_DATAFLASH
 #define CONFIG_FSL_QSPI
@@ -71,21 +70,14 @@
 #define CONFIG_SPI_FLASH_SST
 #define FSL_QSPI_FLASH_SIZE					SZ_64M
 #define FSL_QSPI_FLASH_NUM					1
+#endif /* CONFIG_QSPI_BOOT */
 
-/* QSPI Environment */
-#define CONFIG_ENV_SIZE						0x40000          /* 256KB */
-
-#if CONFIG_RESCUE_UBOOT_CONFIG
-/* Rescue flash size is at minimum 1MBytes.
- * I.e. PBL/U-boot/PPA/PFE/BCD must fit within 0x100000. */
-#define CONFIG_ENV_IS_NOWHERE
-#else
+/* Environment */
 #define CONFIG_ENV_OVERWRITE
-/*#define CONFIG_ENV_IS_IN_SPI_FLASH*/
+
+#define CONFIG_ENV_SIZE						0x40000          /* 256KB */
 #define CONFIG_ENV_OFFSET					0x200000        /* 2MB */
 #define CONFIG_ENV_SECT_SIZE				0x40000
-#endif
-#endif /* CONFIG_QSPI_BOOT */
 
 /* SPI */
 #define CONFIG_FSL_DSPI1
@@ -118,9 +110,6 @@
 
 #define CONFIG_HWCONFIG
 #define HWCONFIG_BUFFER_SIZE				128
-
-#include <config_distro_defaults.h>
-#include <config_distro_bootcmd.h>
 
 /* Monitor Command Prompt */
 #define CONFIG_SYS_CBSIZE					512	/* Console I/O Buffer Size */
@@ -170,6 +159,25 @@
 #define CONFIG_USE_SPIFLASH
 #define CONFIG_SPI_FLASH_MTD
 
+/* UBI filesystem support */
+#define CONFIG_CMD_UBI
+#define CONFIG_CMD_UBIFS
+#define CONFIG_RBTREE
+#define CONFIG_LZO
+#define CONFIG_MTD_UBI_WL_THRESHOLD	4096
+#define CONFIG_MTD_UBI_BEB_LIMIT	20
+
+#include <config_distro_defaults.h>
+#ifndef CONFIG_SPL_BUILD
+#define BOOT_TARGET_DEVICES(func) \
+	func(MMC, mmc, 0) \
+	func(USB, usb, 0) \
+	func(USB, usb, 1) \
+	func(UBIFS, ubifs, 0) \
+	func(SCSI, scsi, 0)
+#include <config_distro_bootcmd.h>
+#endif
+
 #define MTDIDS_DEFAULT \
 	"nor0=qspi@40000000.0"
 
@@ -179,35 +187,13 @@
 		"256k(env)," \
 		"256k(ppa)," \
 		"256k(pfe)," \
-		"-(rootfs)"
+		"-(UBI)"
 
 /* Default environment variables */
 #define COMMON_UBOOT_CONFIG \
-	"verify=no\0"				\
-	"fdt_high=0xffffffffffffffff\0"		\
-	"initrd_high=0xffffffffffffffff\0"	\
-	"fdt_addr=0x00f00000\0"			\
-	"kernel_addr=0x01000000\0"		\
-	"kernelheader_addr=0x800000\0"		\
-	"scriptaddr=0x80000000\0"		\
-	"scripthdraddr=0x80080000\0"		\
-	"fdtheader_addr_r=0x80100000\0"		\
-	"kernelheader_addr_r=0x80200000\0"	\
-	"kernel_addr_r=0x81000000\0"		\
-	"fdt_addr_r=0x90000000\0"		\
-	"load_addr=0xa0000000\0"		\
-	"kernel_size=0x2800000\0"		\
-	"kernelheader_size=0x40000\0"		\
-	"console=ttyS0,115200\0"		\
-	"ethprime=pfe_eth0\0" \
-	"ethaddr=02:00:00:ba:be:01\0" \
-	"eth1addr=02:00:00:ba:be:02\0" \
-	"update_files_path=.\0" \
-	"update_source_file_system=ext4\0" \
-	"autoload=no\0" \
 	"update_tftp_uboot_qspi_nor=" \
         "dhcp;" \
-        "tftp $load_addr $update_files_path/u-boot-with-pbl.bin;" \
+        "tftp $load_addr $TFTP_PATH/u-boot-with-pbl.bin;" \
         "if test $? = \"0\"; then " \
         	"sf probe 0:0;" \
         	"sf erase u-boot 200000;" \
@@ -215,7 +201,7 @@
         "fi\0" \
 	"update_tftp_ppa_qspi_nor=" \
         "dhcp;" \
-        "tftp $load_addr $update_files_path/ppa.itb;" \
+        "tftp $load_addr $TFTP_PATH/ppa.itb;" \
         "if test $? = \"0\"; then " \
         	"sf probe 0:0;" \
 		    "sf erase ppa 40000;" \
@@ -223,7 +209,7 @@
         "fi\0" \
 	"update_tftp_pfe_qspi_nor=" \
         "dhcp;" \
-        "tftp $load_addr $update_files_path/pfe_fw_sbl.itb;" \
+        "tftp $load_addr $TFTP_PATH/pfe_fw_sbl.itb;" \
         "if test $? = \"0\"; then " \
         	"sf probe 0:0;" \
 		    "sf erase pfe 40000;" \
@@ -278,47 +264,43 @@
             "sf write $load_addr pfe $filesize;" \
         "fi\0" \
 
-/* Default flash specific environment variables */
-#if CONFIG_RESCUE_UBOOT_CONFIG
 #define CONFIG_EXTRA_ENV_SETTINGS		\
-		COMMON_UBOOT_CONFIG
-#undef CONFIG_BOOTCOMMAND
-#if defined(CONFIG_QSPI_BOOT) || defined(CONFIG_SD_BOOT_QSPI)
-/* recover from sd card */
-#define CONFIG_BOOTCOMMAND "run update_mmc_uboot_pbl_qspi_nor; run update_mmc_pfe_qspi_nor; run update_mmc_ppa_qspi_nor"
-#endif
-
-#else /* if CONFIG_STANDARD_UBOOT_CONFIG */
-#define CONFIG_EXTRA_ENV_SETTINGS		\
+	"verify=no\0"				\
+	"fdt_high=0xffffffffffffffff\0"		\
+	"initrd_high=0xffffffffffffffff\0"	\
+	"fdt_addr=0x00f00000\0"			\
+	"kernel_addr=0x01000000\0"		\
+	"kernelheader_addr=0x800000\0"		\
+	"scriptaddr=0x80000000\0"		\
+	"scripthdraddr=0x80080000\0"		\
+	"fdtheader_addr_r=0x80100000\0"		\
+	"kernelheader_addr_r=0x80200000\0"	\
+	"kernel_addr_r=0x81000000\0"		\
+	"fdt_addr_r=0x90000000\0"		\
+	"load_addr=0xa0000000\0"		\
+	"kernel_size=0x2800000\0"		\
+	"kernelheader_size=0x40000\0"		\
+	"console=ttyS0,115200\0"		\
+	"ethprime=pfe_eth0\0" \
+	"ethaddr=02:00:00:ba:be:01\0" \
+	"eth1addr=02:00:00:ba:be:02\0" \
+	"TFTP_PATH=.\0" \
+	"autoload=no\0" \
 	COMMON_UBOOT_CONFIG \
-	"mmcboot=" \
+	BOOTENV					\
+	"boot_scripts=grapeboard_boot.scr grapeboard_recovery.scr\0"	\
+	"default_bootargs=root=/dev/mmcblk0p1 rootfstype=ext4 rw rootwait\0" \
+	"default_boot=" \
 		"ext4load mmc 0:1 $fdt_addr_r /boot/grapeboard.dtb;" \
 		"ext4load mmc 0:1 $kernel_addr_r /boot/uImage;" \
 		"if test $? = \"0\"; then " \
 			"pfe stop;" \
+			"setenv bootargs $bootargs $default_bootargs;" \
 			"bootm $kernel_addr_r - $fdt_addr_r;" \
 		"fi\0" \
-	"scsiboot=" \
-		"ext4load scsi 0:1 $fdt_addr_r /boot/grapeboard.dtb;" \
-		"ext4load scsi 0:1 $kernel_addr_r /boot/uImage;" \
-		"if test $? = \"0\"; then " \
-			"pfe stop;" \
-			"bootm $kernel_addr_r - $fdt_addr_r;" \
-		"fi\0" \
-	"netboot=" \
-		"dhcp;" \
-		"tftp $fdt_addr_r $tftp_path/grapeboard.dtb;" \
-		"tftp $kernel_addr_r $tftp_path/uImage;" \
-		"if test $? = \"0\"; then " \
-			"pfe stop;" \
-			"bootm $kernel_addr_r - $fdt_addr_r;" \
-		"fi\0"
 
 #undef CONFIG_BOOTCOMMAND
-#if defined(CONFIG_QSPI_BOOT) || defined(CONFIG_SD_BOOT_QSPI)
-#define CONFIG_BOOTCOMMAND "run mmcboot"
-#endif
-#endif
+#define CONFIG_BOOTCOMMAND 	"run distro_bootcmd; run default_boot"
 
 #include <asm/fsl_secure_boot.h>
 

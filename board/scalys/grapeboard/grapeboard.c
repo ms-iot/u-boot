@@ -53,10 +53,6 @@ int checkboard(void)
 
 	env_set_ulong("recoverymode", recovery_mode_enabled);
 
-	/* set QSPI chip select muxing to 0 */
-	setbits_be32(&pgpio->gpdir, QSPI_MUX_N_MASK);
-	clrbits_be32(&pgpio->gpdat, QSPI_MUX_N_MASK);
-
 	bcd_dtc_blob = get_boardinfo_rescue_flash();
 	if (bcd_dtc_blob != NULL) {
 		/* Board Configuration Data is intact, ready for parsing */

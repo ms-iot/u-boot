@@ -71,10 +71,10 @@ int board_eth_init(bd_t *bis)
 	 * LED_3 = 0x0: Link established (not connected)
 	 * LED_2 = 0x0: Link established (not connected)
 	 * LED_1 = 0xB: Link established, blink for activity (green LED)
-	 * LED_0 = 0x8: 10/100BT link established (orange LED)
+	 * LED_0 = 0x5: 1000BT link established (orange LED)
 	 */
-	miiphy_write(DEFAULT_PFE_MDIO_NAME,EMAC1_PHY_ADDR,0x18,0x00B8);
-	miiphy_write(DEFAULT_PFE_MDIO_NAME,EMAC2_PHY_ADDR,0x18,0x00B8);
+	miiphy_write(DEFAULT_PFE_MDIO_NAME,EMAC1_PHY_ADDR,0x18,0x00B5);
+	miiphy_write(DEFAULT_PFE_MDIO_NAME,EMAC2_PHY_ADDR,0x18,0x00B5);
 
 	/* Enable PHY Power save mode */
 	miiphy_write(DEFAULT_PFE_MDIO_NAME,EMAC1_PHY_ADDR,0x10,0x0200);

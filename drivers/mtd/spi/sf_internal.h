@@ -89,8 +89,24 @@ enum spi_nor_option_flags {
 
 /* SST specific */
 #ifdef CONFIG_SPI_FLASH_SST
+#define CMD_SST_BP		0x02    /* Byte Program */
+#define CMD_SST_AAI_WP		0xAD	/* Auto Address Incr Word Program */
+
+#define SST26_CMD_READ_BPR		0x72
+#define SST26_CMD_WRITE_BPR		0x42
+#define SST26_BPR_8K_NUM		4
+#define SST26_MAX_BPR_REG_LEN		(18 + 1)
+#define SST26_BOUND_REG_SIZE		((32 + SST26_BPR_8K_NUM * 8) * SZ_1K)
+
+enum lock_ctl {
+	SST26_CTL_LOCK,
+	SST26_CTL_UNLOCK,
+	SST26_CTL_CHECK
+};
+
 # define CMD_SST_BP		0x02    /* Byte Program */
 # define CMD_SST_AAI_WP		0xAD	/* Auto Address Incr Word Program */
+# define CMD_SST_ULBPR		0x98	/* Global Block Protection Unlock */
 
 int sst_write_wp(struct spi_flash *flash, u32 offset, size_t len,
 		const void *buf);
@@ -134,6 +150,8 @@ struct spi_flash_info {
 #define RD_QUADIO		BIT(6)	/* use Quad IO Read */
 #define RD_DUALIO		BIT(7)	/* use Dual IO Read */
 #define ADDR_4B			BIT(8)
+#define SECT_4K_ONLY		BIT(9)  /* use only CMD_ERASE_4K */
+#define SST_ULBPR		BIT(10)	/* use SST unlock block protection */
 #define RD_FULL			(RD_QUAD | RD_DUAL | RD_QUADIO | RD_DUALIO)
 };
 

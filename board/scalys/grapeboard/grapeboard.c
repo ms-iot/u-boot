@@ -34,7 +34,8 @@
 #include <spi.h>
 #include <dm/device-internal.h>
 
-#define RESCUE_FLASH_NAME "s25fs064s"
+/* Possible SPI (NOR) flashes used as rescue memory device */
+const char* supported_rescue_flashes[] = {"s25fs064s","sst26wf080b"};
 
 static int recovery_mode_enabled = 0;
 
@@ -153,17 +154,21 @@ int board_init(void)
 #endif
 
 	/* Detect and handle grapeboard rescue mode */
-	if(strcmp(get_qspi_flash_name(), RESCUE_FLASH_NAME) == 0) {
-		/* Revert chip select muxing to standard QSPI flash */
-		setbits_be32(&pgpio->gpdir, QSPI_MUX_N_MASK);
-		clrbits_be32(&pgpio->gpdat, QSPI_MUX_N_MASK);
-		printf("Please release the rescue mode button (S2) to enter the recovery mode\n");
-		recovery_mode_enabled = 1;
-		while(strcmp(get_qspi_flash_name(), RESCUE_FLASH_NAME) == 0) {
-			udelay(500000);
-			puts("\033[1A"); /* Overwrite previous line */
+	char *current_flash_name = strdup(get_qspi_flash_name());
+	for (int index = 0; index < sizeof(supported_rescue_flashes) / sizeof(supported_rescue_flashes[0]); index++) {
+		if(strcmp(current_flash_name, supported_rescue_flashes[index]) == 0) {
+			/* Revert chip select muxing to standard QSPI flash */
+			setbits_be32(&pgpio->gpdir, QSPI_MUX_N_MASK);
+			clrbits_be32(&pgpio->gpdat, QSPI_MUX_N_MASK);
+			printf("Please release the rescue mode button (S2) to enter the recovery mode\n");
+			recovery_mode_enabled = 1;
+			while(strcmp(get_qspi_flash_name(), supported_rescue_flashes[index]) == 0) {
+				udelay(500000);
+				puts("\033[1A"); /* Overwrite previous line */
+			}
 		}
 	}
+	free(current_flash_name);
 
 #ifdef CONFIG_FSL_CAAM
 	sec_init();

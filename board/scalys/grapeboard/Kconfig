@@ -40,4 +40,6 @@ config PBL_BINARY_SRC
 
 endmenu
 
+source "board/freescale/common/Kconfig"
+
 endif

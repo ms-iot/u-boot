@@ -14,7 +14,6 @@
 #include <asm/arch/config.h>
 #include <asm/arch/stream_id_lsch2.h>
 #include <asm/arch/soc.h>
-#include <../../../include/generated/autoconf.h>
 
 #define CONFIG_SUPPORT_RAW_INITRD
 
@@ -52,7 +51,7 @@
 #define CONFIG_LAYERSCAPE_NS_ACCESS
 
 /* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN				(0x60000 + 128 * 1024)
+#define CONFIG_SYS_MALLOC_LEN				(0x60000 + 128 * 1024 + 0x100000)
 
 /* QSPI */
 #ifdef CONFIG_QSPI_BOOT
@@ -178,10 +177,10 @@
 #endif
 
 #define MTDIDS_DEFAULT \
-	"nor0=qspi@40000000.0"
+	"nor0=1550000.quadspi"
 
 #define MTDPARTS_DEFAULT    \
-	"mtdparts=qspi@40000000.0:" \
+	"mtdparts=1550000.quadspi:" \
 		"2M@0x0(u-boot)," \
 		"256k(env)," \
 		"256k(pfe)," \
@@ -338,7 +337,7 @@
 	COMMON_UBOOT_CONFIG \
 	BOOTENV					\
 	"boot_scripts=grapeboard_boot.scr grapeboard_recovery.scr\0"	\
-	"default_bootargs=root=/dev/mmcblk0p1 rootfstype=ext4 rw rootwait\0" \
+	"default_bootargs=root=/dev/mmcblk0p1 rootfstype=ext4 rw rootwait $mtdparts\0" \
 	"default_boot=" \
 			  "setenv load_succes 1;"\
 			  "ext4load mmc 0:1 $fdt_addr_r /boot/grapeboard.dtb;" \

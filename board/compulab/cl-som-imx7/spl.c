@@ -208,3 +208,10 @@ void board_boot_order(u32 *spl_boot_list)
 		break;
 	}
 }
+
+#if defined(CONFIG_MULTI_DTB_FIT) || defined(CONFIG_SPL_LOAD_FIT)
+int board_fit_config_name_match(const char *name)
+{
+	return 0;
+}
+#endif

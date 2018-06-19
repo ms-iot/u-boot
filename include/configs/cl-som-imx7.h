@@ -19,9 +19,13 @@
 
 #define CONFIG_BOARD_LATE_INIT
 
+#ifndef CONFIG_SECURE_BOOT
+#ifndef CONFIG_CSF_SIZE
+#define CONFIG_CSF_SIZE			0x4000
+#endif
+#endif /* CONFIG_SECURE_BOOT */
 /* Uncomment to enable secure boot support */
 /* #define CONFIG_SECURE_BOOT */
-#define CONFIG_CSF_SIZE			0x4000
 
 /* Network */
 #define CONFIG_FEC_MXC
@@ -62,7 +66,6 @@
 
 #undef CONFIG_SYS_AUTOLOAD
 #undef CONFIG_EXTRA_ENV_SETTINGS
-#undef CONFIG_BOOTCOMMAND
 
 #define CONFIG_SYS_AUTOLOAD		"no"
 
@@ -118,10 +121,12 @@
 	"emmcbootscript=setenv mmcdev 1; setenv mmcblk 2; run mmcbootscript\0" \
 	"emmcboot=setenv mmcdev 1; setenv mmcblk 2; run mmcboot\0" \
 
+#if !defined(CONFIG_BOOTCOMMAND)
 #define CONFIG_BOOTCOMMAND \
 	"echo SD boot attempt ...; run sdbootscript; run sdboot; " \
 	"echo eMMC boot attempt ...; run emmcbootscript; run emmcboot; " \
 	"echo USB boot attempt ...; run usbbootscript; "
+#endif /* !defined(CONFIG_BOOTCOMMAND) */
 
 #define CONFIG_SYS_MEMTEST_START	0x80000000
 #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 0x20000000)

@@ -4,3 +4,5 @@ S:	Maintained
 F:	board/compulab/cl-som-imx7
 F:	include/configs/cl-som-imx7.h
 F:	configs/cl-som-imx7_defconfig
+F:	configs/cl-som-imx7_nt_defconfig
+F:	arch/arm/dts/imx7d-cl-som-imx7.dts

@@ -34,6 +34,7 @@ config TARGET_MX7DSABRESD
 	select DM
 	select DM_THERMAL
 	select MX7D
+	select SUPPORT_SPL
 	imply CMD_DM
 
 config TARGET_PICO_IMX7D

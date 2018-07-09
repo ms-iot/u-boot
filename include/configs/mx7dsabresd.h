@@ -9,6 +9,7 @@
 #define __MX7D_SABRESD_CONFIG_H
 
 #include "mx7_common.h"
+#include "imx7_spl.h"
 
 #define CONFIG_DBG_MONITOR
 #define PHYS_SDRAM_SIZE			SZ_1G
@@ -148,6 +149,7 @@
 			"bootz; " \
 		"fi;\0"
 
+#if !defined(CONFIG_BOOTCOMMAND)
 #define CONFIG_BOOTCOMMAND \
 	   "mmc dev ${mmcdev};" \
 	   "mmc dev ${mmcdev}; if mmc rescan; then " \
@@ -160,6 +162,7 @@
 			   "fi; " \
 		   "fi; " \
 	   "else run netboot; fi"
+#endif /* !defined(CONFIG_BOOTCOMMAND) */
 
 #define CONFIG_SYS_MEMTEST_START	0x80000000
 #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 0x20000000)

@@ -43,6 +43,9 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define NAND_PAD_READY0_CTRL (PAD_CTL_DSE_3P3V_49OHM | PAD_CTL_PUS_PU5KOHM)
 
+#define USDHC_PAD_CTRL (PAD_CTL_DSE_3P3V_32OHM | PAD_CTL_SRE_SLOW | \
+			PAD_CTL_HYS | PAD_CTL_PUE | PAD_CTL_PUS_PU47KOHM)
+
 #ifdef CONFIG_MXC_SPI
 static iomux_v3_cfg_t const ecspi3_pads[] = {
     MX7D_PAD_SAI2_RX_DATA__ECSPI3_SCLK | MUX_PAD_CTRL(SPI_PAD_CTRL),
@@ -347,6 +350,75 @@ int power_init_board(void)
 }
 #endif
 
+#ifdef CONFIG_SPL_BUILD
+#include <spl.h>
+
+#if !CONFIG_IS_ENABLED(DM_MMC)
+static iomux_v3_cfg_t const usdhc1_pads[] = {
+	MX7D_PAD_SD1_CLK__SD1_CLK | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX7D_PAD_SD1_CMD__SD1_CMD | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX7D_PAD_SD1_DATA0__SD1_DATA0 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX7D_PAD_SD1_DATA1__SD1_DATA1 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX7D_PAD_SD1_DATA2__SD1_DATA2 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX7D_PAD_SD1_DATA3__SD1_DATA3 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+
+	MX7D_PAD_SD1_CD_B__GPIO5_IO0 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX7D_PAD_SD1_WP__GPIO5_IO1 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+	MX7D_PAD_SD1_RESET_B__SD1_RESET_B | MUX_PAD_CTRL(USDHC_PAD_CTRL),
+};
+
+#define USDHC1_CD IMX_GPIO_NR(5, 0)
+#define USDHC1_WP IMX_GPIO_NR(5, 1)
+
+int board_mmc_init(bd_t *bis)
+{
+	struct fsl_esdhc_cfg usdhc_cfg = {};
+
+	imx_iomux_v3_setup_multiple_pads(usdhc1_pads, ARRAY_SIZE(usdhc1_pads));
+	gpio_direction_input(USDHC1_CD);
+	gpio_direction_input(USDHC1_WP);
+
+	usdhc_cfg.esdhc_base = USDHC1_BASE_ADDR;
+	usdhc_cfg.sdhc_clk = mxc_get_clock(MXC_ESDHC_CLK);
+	usdhc_cfg.max_bus_width = 4;
+
+	return fsl_esdhc_initialize(bis, &usdhc_cfg);
+}
+
+int board_mmc_getcd(struct mmc *mmc)
+{
+	struct fsl_esdhc_cfg *cfg = (struct fsl_esdhc_cfg *)mmc->priv;
+	int ret = 0;
+
+	switch (cfg->esdhc_base) {
+	case USDHC1_BASE_ADDR:
+		ret = !gpio_get_value(USDHC1_CD);
+		break;
+	}
+
+	return ret;
+}
+#endif
+
+void board_init_f(ulong dummy)
+{
+	/* Clear the BSS. */
+	memset(__bss_start, 0, __bss_end - __bss_start);
+
+	setup_iomux_uart();
+
+	/* setup AIPS and disable watchdog */
+	arch_cpu_init();
+
+	/* setup GP timer */
+	timer_init();
+
+	preloader_console_init();
+
+	/* No need to initialize DRAM; handled by DCD script */
+}
+#endif
+
 int board_late_init(void)
 {
 	struct wdog_regs *wdog = (struct wdog_regs *)WDOG1_BASE_ADDR;
@@ -377,3 +449,10 @@ int checkboard(void)
 
 	return 0;
 }
+
+#if defined(CONFIG_MULTI_DTB_FIT) || defined(CONFIG_SPL_LOAD_FIT)
+int board_fit_config_name_match(const char *name)
+{
+	return 0;
+}
+#endif

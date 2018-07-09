@@ -9,7 +9,9 @@
 
 #include "pinctrl-imx.h"
 
-static struct imx_pinctrl_soc_info imx7_pinctrl_soc_info;
+static struct imx_pinctrl_soc_info imx7_pinctrl_soc_info = {
+	.flags = ZERO_OFFSET_VALID,
+};
 
 static struct imx_pinctrl_soc_info imx7_lpsr_pinctrl_soc_info = {
 	.flags = ZERO_OFFSET_VALID,

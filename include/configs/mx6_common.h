@@ -69,4 +69,9 @@
 #endif
 #endif
 
+/* If OPTEE boot is enabled, u-boot proper runs in normal world */
+#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_OPTEE_BOOT)
+#define CONFIG_SYS_NORMAL_WORLD
+#endif
+
 #endif

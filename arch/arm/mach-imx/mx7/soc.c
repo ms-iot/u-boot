@@ -165,7 +165,7 @@ u32 __weak get_board_rev(void)
 #endif
 
 /* enable all periherial can be accessed in nosec mode */
-static void init_csu(void)
+static void __maybe_unused init_csu(void)
 {
 	int i = 0;
 	for (i = 0; i < CSU_NUM_REGS; i++)
@@ -264,7 +264,10 @@ int arch_cpu_init(void)
 {
 	init_aips();
 
+#ifndef CONFIG_SYS_NORMAL_WORLD
 	init_csu();
+#endif
+
 	/* Disable PDE bit of WMCR register */
 	imx_wdog_disable_powerdown();
 
@@ -296,7 +299,7 @@ int arch_misc_init(void)
 		env_set("soc", "imx7s");
 #endif
 
-#ifdef CONFIG_FSL_CAAM
+#if defined(CONFIG_FSL_CAAM) && !defined(CONFIG_SYS_NORMAL_WORLD)
 	sec_init();
 #endif
 

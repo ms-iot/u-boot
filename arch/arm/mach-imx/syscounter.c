@@ -57,6 +57,7 @@ static inline unsigned long long us_to_tick(unsigned long long usec)
 
 int timer_init(void)
 {
+#if !defined(CONFIG_SYS_NORMAL_WORLD)
 	struct sctr_regs *sctr = (struct sctr_regs *)SCTR_BASE_ADDR;
 	unsigned long val, freq;
 
@@ -70,6 +71,7 @@ int timer_init(void)
 	val &= ~(SC_CNTCR_FREQ0 | SC_CNTCR_FREQ1);
 	val |= SC_CNTCR_FREQ0 | SC_CNTCR_ENABLE | SC_CNTCR_HDBG;
 	writel(val, &sctr->cntcr);
+#endif
 
 	gd->arch.tbl = 0;
 	gd->arch.tbu = 0;

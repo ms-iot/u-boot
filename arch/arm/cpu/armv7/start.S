@@ -168,30 +168,31 @@ ENTRY(cpu_init_cp15)
 	mcr	p15, 0, r0, c1, c0, 0	@ write system control register
 #endif
 
-#if (defined(CONFIG_ARM_ERRATA_742230) || defined(CONFIG_ARM_ERRATA_794072))
+#if (defined(CONFIG_ARM_ERRATA_742230) || defined(CONFIG_ARM_ERRATA_794072)) \
+	&& !defined(CONFIG_SYS_NORMAL_WORLD)
 	mrc	p15, 0, r0, c15, c0, 1	@ read diagnostic register
 	orr	r0, r0, #1 << 4		@ set bit #4
 	mcr	p15, 0, r0, c15, c0, 1	@ write diagnostic register
 #endif
 
-#ifdef CONFIG_ARM_ERRATA_743622
+#if defined(CONFIG_ARM_ERRATA_743622) && !defined(CONFIG_SYS_NORMAL_WORLD)
 	mrc	p15, 0, r0, c15, c0, 1	@ read diagnostic register
 	orr	r0, r0, #1 << 6		@ set bit #6
 	mcr	p15, 0, r0, c15, c0, 1	@ write diagnostic register
 #endif
 
-#ifdef CONFIG_ARM_ERRATA_751472
+#if defined(CONFIG_ARM_ERRATA_751472) && !defined(CONFIG_SYS_NORMAL_WORLD)
 	mrc	p15, 0, r0, c15, c0, 1	@ read diagnostic register
 	orr	r0, r0, #1 << 11	@ set bit #11
 	mcr	p15, 0, r0, c15, c0, 1	@ write diagnostic register
 #endif
-#ifdef CONFIG_ARM_ERRATA_761320
+#if defined(CONFIG_ARM_ERRATA_761320) && !defined(CONFIG_SYS_NORMAL_WORLD)
 	mrc	p15, 0, r0, c15, c0, 1	@ read diagnostic register
 	orr	r0, r0, #1 << 21	@ set bit #21
 	mcr	p15, 0, r0, c15, c0, 1	@ write diagnostic register
 #endif
 
-#ifdef CONFIG_ARM_ERRATA_845369
+#if defined(CONFIG_ARM_ERRATA_845369) && !defined(CONFIG_SYS_NORMAL_WORLD)
 	mrc     p15, 0, r0, c15, c0, 1	@ read diagnostic register
 	orr     r0, r0, #1 << 22	@ set bit #22
 	mcr     p15, 0, r0, c15, c0, 1	@ write diagnostic register

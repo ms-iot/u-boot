@@ -422,6 +422,7 @@ dtb-$(CONFIG_MX6QDL) += \
 	imx6dl-icore-mipi.dtb \
 	imx6dl-icore-rqs.dtb \
 	imx6dl-mamoj.dtb \
+	imx6qdl-sdb.dtb \
 	imx6q-cm-fx6.dtb \
 	imx6q-icore.dtb \
 	imx6q-icore-mipi.dtb \

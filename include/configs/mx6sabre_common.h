@@ -152,6 +152,7 @@
 					"echo WARNING: Could not determine dtb to use; fi; " \
 			"fi;\0" \
 
+#if !defined(CONFIG_BOOTCOMMAND)
 #define CONFIG_BOOTCOMMAND \
 	"run findfdt;" \
 	"mmc dev ${mmcdev};" \
@@ -165,6 +166,7 @@
 			"fi; " \
 		"fi; " \
 	"else run netboot; fi"
+#endif /* !defined(CONFIG_BOOTCOMMAND) */
 
 #define CONFIG_ARP_TIMEOUT     200UL
 

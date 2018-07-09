@@ -229,7 +229,14 @@ static struct i2c_pads_info mx6dl_i2c_pad_info1 = {
 	}
 };
 
-static void setup_spi(void)
+#if defined(CONFIG_MULTI_DTB_FIT) || defined(CONFIG_SPL_LOAD_FIT)
+int board_fit_config_name_match(const char *name)
+{
+	return 0;
+}
+#endif
+
+static void __maybe_unused setup_spi(void)
 {
 	SETUP_IOMUX_PADS(ecspi1_pads);
 }

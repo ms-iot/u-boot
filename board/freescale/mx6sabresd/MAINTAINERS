@@ -4,3 +4,5 @@ S:	Maintained
 F:	board/freescale/mx6sabresd/
 F:	include/configs/mx6sabresd.h
 F:	configs/mx6sabresd_defconfig
+F:	configs/mx6sabresd_nt_defconfig
+F:	arch/arm/dts/imx6qdl-sdb.dts

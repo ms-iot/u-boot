@@ -436,6 +436,7 @@ dtb-$(CONFIG_MX6SL) += imx6sll-evk.dtb
 
 dtb-$(CONFIG_MX6SX) += \
 	imx6sx-sabreauto.dtb \
+	imx6sx-udoo-neo.dtb \
 	imx6sx-sdb.dtb
 
 dtb-$(CONFIG_MX6UL) += \

@@ -4,3 +4,5 @@ S:	Maintained
 F:	board/solidrun/mx6cuboxi/
 F:	include/configs/mx6cuboxi.h
 F:	configs/mx6cuboxi_defconfig
+F:	configs/mx6cuboxi_nt_defconfig
+F:	arch/arm/dts/imx6qdl-mx6cuboxi.dts

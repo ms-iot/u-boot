@@ -157,9 +157,26 @@ static iomux_v3_cfg_t const usb_pads[] = {
 	IOMUX_PADS(PAD_GPIO_0__GPIO1_IO00 | MUX_PAD_CTRL(NO_PAD_CTRL)),
 };
 
+static iomux_v3_cfg_t const pcie_pads[] = {
+	IOMUX_PADS(PAD_SD4_DAT3__GPIO2_IO11 | MUX_PAD_CTRL(NO_PAD_CTRL)),
+};
+
+#if defined(CONFIG_MULTI_DTB_FIT) || defined(CONFIG_SPL_LOAD_FIT)
+int board_fit_config_name_match(const char *name)
+{
+	return 0;
+}
+#endif
+
 static void setup_iomux_uart(void)
 {
 	SETUP_IOMUX_PADS(uart1_pads);
+}
+
+static void __maybe_unused setup_iomux_pcie(void)
+{
+	SETUP_IOMUX_PADS(pcie_pads);
+	enable_pcie_clock();
 }
 
 static struct fsl_esdhc_cfg usdhc_cfg = {
@@ -450,6 +467,10 @@ int board_ehci_hcd_init(int port)
 int board_early_init_f(void)
 {
 	setup_iomux_uart();
+
+#ifdef CONFIG_PCIE_IMX
+	setup_iomux_pcie();
+#endif
 
 #ifdef CONFIG_CMD_SATA
 	setup_sata();

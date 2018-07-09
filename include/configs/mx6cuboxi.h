@@ -62,6 +62,12 @@
 		"setenv stderr serial; " \
 	"fi;"
 
+/* PCI */
+#if !defined(CONFIG_SPL_BUILD) || defined(CONFIG_SPL_PCI_SUPPORT)
+#define CONFIG_PCIE_IMX
+#define CONFIG_PCIE_IMX_PERST_GPIO IMX_GPIO_NR(2, 11)
+#endif
+
 /* Command definition */
 
 #define CONFIG_MXC_UART_BASE	UART1_BASE

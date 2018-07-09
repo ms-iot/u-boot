@@ -27,6 +27,7 @@ obj-$(CONFIG_ARMV7_PSCI)	+= psci.o psci-common.o
 obj-$(CONFIG_IPROC) += iproc-common/
 obj-$(CONFIG_KONA) += kona-common/
 obj-$(CONFIG_SYS_ARCH_TIMER) += arch_timer.o
+obj-$(CONFIG_SPL_OPTEE_BOOT) += optee_jump.o
 
 ifneq (,$(filter s5pc1xx exynos,$(SOC)))
 obj-y += s5p-common/

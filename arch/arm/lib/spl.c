@@ -73,3 +73,19 @@ void __noreturn jump_to_image_linux(struct spl_image_info *spl_image)
 }
 #endif	/* CONFIG_ARM64 */
 #endif
+
+#ifdef CONFIG_SPL_OPTEE_BOOT
+void __noreturn arch_jump_to_image_optee(u32 optee_entry_point,
+					 u32 pageable_part,
+					 u32 uboot_entry_point);
+
+void __noreturn jump_to_image_optee(struct spl_image_info *spl_image)
+{
+	/* flush and turn off caches before jumping to OPTEE */
+	cleanup_before_linux();
+
+	arch_jump_to_image_optee(spl_image->entry_point,
+				 0,
+				 CONFIG_SYS_TEXT_BASE);
+}
+#endif

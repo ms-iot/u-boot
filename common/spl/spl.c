@@ -531,6 +531,12 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 		spl_invoke_atf(&spl_image);
 		break;
 #endif
+#ifdef CONFIG_SPL_OPTEE_BOOT
+	case IH_OS_TEE:
+		debug("Jumping to OPTEE\n");
+		jump_to_image_optee(&spl_image);
+		break;
+#endif
 #ifdef CONFIG_SPL_OS_BOOT
 	case IH_OS_LINUX:
 		debug("Jumping to Linux\n");

@@ -811,6 +811,15 @@ config SPL_ATF_NO_PLATFORM_PARAM
 
 	  If your ATF is affected, say Y.
 
+config SPL_OPTEE_BOOT
+	depends on SPL
+	bool "Enable support for loading OPTEE and jumping to it from SPL"
+	default n
+	help
+	  Configure SPL to boot OPTEE. SPL passes the U-Boot proper entry
+	  point as the return address when it jumps to OPTEE, allowing OPTEE
+	  to start U-Boot proper in normal mode when it returns.
+
 config SPL_AM33XX_ENABLE_RTC32K_OSC
 	bool "Enable the RTC32K OSC on AM33xx based platforms"
 	default y if AM33XX

@@ -126,6 +126,19 @@ int spl_board_ubi_load_image(u32 boot_device);
  */
 void __noreturn jump_to_image_linux(struct spl_image_info *spl_image);
 
+#ifdef CONFIG_SPL_OPTEE_BOOT
+/**
+ * jump_to_image_optee() - Jump to OP-TEE from SPL
+ *
+ * This jumps into OP-TEE using the information in @spl_image, passing
+ *  it the entry point of U-Boot Proper so it can return there
+ *  in non-secure mode
+ *
+ * @spl_image: Image description to set up
+ */
+void __noreturn jump_to_image_optee(struct spl_image_info *spl_image);
+#endif
+
 /**
  * spl_start_uboot() - Check if SPL should start the kernel or U-Boot
  *
@@ -297,6 +310,14 @@ void spl_invoke_atf(struct spl_image_info *spl_image);
  * can implement 'board_return_to_bootrom'.
  */
 void board_return_to_bootrom(void);
+
+#ifdef CONFIG_SPL_OPTEE_BOOT
+#include <tee/optee.h>
+
+struct optee_image_info {
+	struct optee_header header;
+};
+#endif
 
 /**
  * spl_perform_fixups() - arch/board-specific callback before processing

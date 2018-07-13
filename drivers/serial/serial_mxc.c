@@ -76,7 +76,8 @@
 #define UFCR_RXTL_SHF	0       /* Receiver trigger level shift */
 #define UFCR_RFDIV	(7<<7)  /* Reference freq divider mask */
 #define UFCR_RFDIV_SHF	7	/* Reference freq divider shift */
-#define RFDIV		4	/* divide input clock by 2 */
+#define RFDIV2		4	/* divide input clock by 2 */
+#define RFDIV1		5	/* divide input clock by 1 */
 #define UFCR_DCEDTE	(1<<6)  /* DTE mode select */
 #define UFCR_TXTL_SHF	10      /* Transmitter trigger level shift */
 #define USR1_PARITYERR	(1<<15) /* Parity error interrupt flag */
@@ -159,7 +160,11 @@ static void _mxc_serial_setbrg(struct mxc_uart *base, unsigned long clk,
 {
 	u32 tmp;
 
-	tmp = RFDIV << UFCR_RFDIV_SHF;
+	tmp = RFDIV2 << UFCR_RFDIV_SHF;
+	if ((baudrate * 16) > (clk / 2)) {
+		tmp = RFDIV1 << UFCR_RFDIV_SHF;
+		clk *= 2;
+	}
 	if (use_dte)
 		tmp |= UFCR_DCEDTE;
 	else
@@ -167,7 +172,7 @@ static void _mxc_serial_setbrg(struct mxc_uart *base, unsigned long clk,
 	writel(tmp, &base->fcr);
 
 	writel(0xf, &base->bir);
-	writel(clk / (2 * baudrate), &base->bmr);
+	writel((clk / (2 * baudrate)) - 1, &base->bmr);
 
 	writel(UCR2_WS | UCR2_IRTS | UCR2_RXEN | UCR2_TXEN | UCR2_SRST,
 	       &base->cr2);

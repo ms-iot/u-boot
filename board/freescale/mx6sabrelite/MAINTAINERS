@@ -1,0 +1,6 @@
+MX6SABRELITE BOARD
+M:	David Vescovi <dvescovi@gmail.com>
+S:	Maintained
+F:	board/freescale/mx6sabrelite/
+F:	include/configs/mx6sabrelite.h
+F:	configs/mx6sabrelite_nt_defconfig

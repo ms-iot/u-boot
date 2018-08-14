@@ -308,6 +308,12 @@ config TARGET_MX6SABRESD
 	select SUPPORT_SPL
 	imply CMD_DM
 
+config TARGET_MX6SABRELITE
+	bool "mx6sabrelite"
+	select MX6QDL
+	select BOARD_LATE_INIT
+	select SUPPORT_SPL
+
 config TARGET_MX6SLEVK
 	bool "mx6slevk"
 	select MX6SL
@@ -540,6 +546,7 @@ source "board/freescale/mx6qarm2/Kconfig"
 source "board/freescale/mx6memcal/Kconfig"
 source "board/freescale/mx6sabreauto/Kconfig"
 source "board/freescale/mx6sabresd/Kconfig"
+source "board/freescale/mx6sabrelite/Kconfig"
 source "board/freescale/mx6slevk/Kconfig"
 source "board/freescale/mx6sllevk/Kconfig"
 source "board/freescale/mx6sxsabresd/Kconfig"

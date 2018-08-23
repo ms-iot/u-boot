@@ -43,6 +43,14 @@ config IMX_BOOTAUX
 	help
 	  bootaux [addr] to boot auxiliary core.
 
+config IMX_PERSIST_INIT
+	bool "Persist initialized IPs when booting an OS"
+	default n
+	depends on ARCH_MX7 || ARCH_MX6
+	help
+	  This option disables the custom arch_preboot_os for iMX
+	  to leave several IPs enabled while booting into an OS.
+
 config USE_IMXIMG_PLUGIN
 	bool "Use imximage plugin code"
 	depends on ARCH_MX7 || ARCH_MX6 || ARCH_MX7ULP

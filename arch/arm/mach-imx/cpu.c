@@ -280,6 +280,7 @@ u32 get_ahb_clk(void)
 }
 #endif
 
+#if !defined(CONFIG_IMX_PERSIST_INIT)
 void arch_preboot_os(void)
 {
 #if defined(CONFIG_PCIE_IMX)
@@ -299,6 +300,7 @@ void arch_preboot_os(void)
 	lcdif_power_down();
 #endif
 }
+#endif /* !defined(CONFIG_IMX_PERSIST_INIT) */
 
 #ifndef CONFIG_MX8M
 void set_chipselect_size(int const cs_size)

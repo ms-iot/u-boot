@@ -7,6 +7,15 @@ config FSL_CAAM
 	  Module (CAAM), also known as the SEC version 4 (SEC4). The driver uses
 	  Job Ring as interface to communicate with CAAM.
 
+config SPL_FSL_CAAM
+	bool "Freescale Crypto Driver Support in SPL"
+	select FSL_CAAM
+	depends on SPL
+	help
+	  Enables the Freescale's Cryptographic Accelerator and Assurance
+	  Module (CAAM) in SPL, also known as the SEC version 4 (SEC4).
+	  The driver uses Job Ring as interface to communicate with CAAM.
+
 config SYS_FSL_HAS_SEC
 	bool
 	help

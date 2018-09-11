@@ -284,6 +284,21 @@ void inline_cnstr_jobdesc_rng_instantiation(uint32_t *desc, int handle)
 	}
 }
 
+/* Fills a buffer with bytes of random data */
+void inline_cnstr_jobdesc_rng_get_random_bytes(uint32_t *desc, uint8_t *buf,
+					       uint32_t out_sz)
+{
+	dma_addr_t dma_addr_buf;
+
+	dma_addr_buf = virt_to_phys((void *)buf);
+
+	init_job_desc(desc, 0);
+
+	append_operation(desc, OP_TYPE_CLASS1_ALG | OP_ALG_ALGSEL_RNG);
+
+	append_fifo_store(desc, dma_addr_buf, out_sz, FIFOST_TYPE_RNGSTORE);
+}
+
 /* Change key size to bytes form bits in calling function*/
 void inline_cnstr_jobdesc_pkha_rsaexp(uint32_t *desc,
 				      struct pk_in_params *pkin, uint8_t *out,

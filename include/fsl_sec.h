@@ -305,6 +305,14 @@ struct sg_entry {
  */
 int blob_dek(const u8 *src, u8 *dst, u8 len);
 
+/* fsl_get_random_bytes:
+ * Fills a buffer with random bytes from the CAAM
+ * @buf: pointer to the buffer to store random bytes
+ * @len: length in bytes of the buffer
+ * @return: 0 on success, error otherwise
+ */
+int fsl_get_random_bytes(uint8_t *buf, size_t len);
+
 #if defined(CONFIG_ARCH_C29X)
 int sec_init_idx(uint8_t);
 #endif

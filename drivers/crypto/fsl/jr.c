@@ -440,7 +440,7 @@ int sec_reset(void)
 {
 	return sec_reset_idx(0);
 }
-#ifndef CONFIG_SPL_BUILD
+#if !defined(CONFIG_SPL_BUILD) || defined(CONFIG_SPL_FSL_CAAM)
 static int instantiate_rng(uint8_t sec_idx)
 {
 	u32 *desc;
@@ -573,13 +573,12 @@ static int rng_init(uint8_t sec_idx)
 
 	return ret;
 }
-#endif
+#endif /* !defined(CONFIG_SPL_BUILD) || defined(CONFIG_SPL_FSL_CAAM) */
+
 int sec_init_idx(uint8_t sec_idx)
 {
 	ccsr_sec_t *sec = (void *)SEC_ADDR(sec_idx);
 	uint32_t mcr = sec_in32(&sec->mcfgr);
-	uint32_t jrown_ns;
-	int i;
 	int ret = 0;
 
 #ifdef CONFIG_FSL_CORENET
@@ -635,12 +634,16 @@ int sec_init_idx(uint8_t sec_idx)
 #endif
 #endif
 
+#if !defined(CONFIG_SPL_FSL_CAAM)
+	uint32_t jrown_ns;
+	int i;
 	/* Set ownership of job rings to non-TrustZone mode by default */
 	for (i = 0; i < ARRAY_SIZE(sec->jrliodnr); i++) {
 		jrown_ns = sec_in32(&sec->jrliodnr[i].ms);
 		jrown_ns |= JROWN_NS | JRMID_NS;
 		sec_out32(&sec->jrliodnr[i].ms, jrown_ns);
 	}
+#endif
 
 	ret = jr_init(sec_idx);
 	if (ret < 0) {
@@ -655,7 +658,7 @@ int sec_init_idx(uint8_t sec_idx)
 
 	pamu_enable();
 #endif
-#ifndef CONFIG_SPL_BUILD
+#if !defined(CONFIG_SPL_BUILD) || defined(CONFIG_SPL_FSL_CAAM)
 	if (get_rng_vid(sec_idx) >= 4) {
 		if (rng_init(sec_idx) < 0) {
 			printf("SEC%u: RNG instantiation failed\n", sec_idx);

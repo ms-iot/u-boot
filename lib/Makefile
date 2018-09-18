@@ -49,6 +49,7 @@ obj-y += list_sort.o
 endif
 
 obj-$(CONFIG_RSA) += rsa/
+obj-$(CONFIG_$(SPL_)FIT_SIGNATURE) += checksum.o
 obj-$(CONFIG_SHA1) += sha1.o
 obj-$(CONFIG_SHA256) += sha256.o
 

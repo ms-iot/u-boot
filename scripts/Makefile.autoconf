@@ -36,6 +36,11 @@ UBOOTINCLUDE    := \
 		-I$(srctree)/arch/$(ARCH)/include \
 		-include $(srctree)/include/linux/kconfig.h
 
+ifdef CONFIG_USE_CYREP_CRYPT
+UBOOTINCLUDE    += \
+		-I$(srctree)/external/RIoT/CyReP/cyrep
+endif
+
 c_flags := $(KBUILD_CFLAGS) $(KBUILD_CPPFLAGS) $(PLATFORM_CPPFLAGS) \
 					$(UBOOTINCLUDE) $(NOSTDINC_FLAGS)
 

@@ -12,8 +12,8 @@
 DECLARE_GLOBAL_DATA_PTR;
 #endif /* !USE_HOSTCC*/
 #include <image.h>
+#include <u-boot/checksum.h>
 #include <u-boot/rsa.h>
-#include <u-boot/rsa-checksum.h>
 
 #define IMAGE_MAX_HASHED_NODES		100
 

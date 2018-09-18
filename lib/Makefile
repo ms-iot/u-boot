@@ -48,6 +48,8 @@ obj-$(CONFIG_BITREVERSE) += bitrev.o
 obj-y += list_sort.o
 endif
 
+obj-$(CONFIG_CYRES) += cyres/
+obj-$(CONFIG_ECC) += ecc/
 obj-$(CONFIG_RSA) += rsa/
 obj-$(CONFIG_$(SPL_)FIT_SIGNATURE) += checksum.o
 obj-$(CONFIG_SHA1) += sha1.o

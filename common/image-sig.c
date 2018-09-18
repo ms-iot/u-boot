@@ -13,7 +13,12 @@ DECLARE_GLOBAL_DATA_PTR;
 #endif /* !USE_HOSTCC*/
 #include <image.h>
 #include <u-boot/checksum.h>
+#ifdef CONFIG_RSA
 #include <u-boot/rsa.h>
+#endif
+#ifdef CONFIG_ECC
+#include <u-boot/ecc.h>
+#endif
 
 #define IMAGE_MAX_HASHED_NODES		100
 
@@ -54,6 +59,7 @@ struct checksum_algo checksum_algos[] = {
 };
 
 struct crypto_algo crypto_algos[] = {
+#ifdef CONFIG_RSA
 	{
 		.name = "rsa2048",
 		.key_len = RSA2048_BYTES,
@@ -67,7 +73,17 @@ struct crypto_algo crypto_algos[] = {
 		.sign = rsa_sign,
 		.add_verify_data = rsa_add_verify_data,
 		.verify = rsa_verify,
-	}
+	},
+#endif
+#ifdef CONFIG_ECC
+	{
+		.name = ECC_NIST_P256,
+		.key_len = ECC_P256_BYTES,
+		.sign = ecc_sign,
+		.add_verify_data = ecc_add_verify_data,
+		.verify = ecc_verify,
+	},
+#endif
 
 };
 

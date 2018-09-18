@@ -665,6 +665,11 @@ UBOOTINCLUDE    := \
 		-I$(srctree)/arch/$(ARCH)/include \
 		-include $(srctree)/include/linux/kconfig.h
 
+ifdef CONFIG_CYRES
+UBOOTINCLUDE += \
+	     -I$(srctree)/external/RIoT/CyReP/cyrep
+endif
+
 NOSTDINC_FLAGS += -nostdinc -isystem $(shell $(CC) -print-file-name=include)
 CHECKFLAGS     += $(NOSTDINC_FLAGS)
 

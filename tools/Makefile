@@ -75,10 +75,18 @@ RSA_OBJS-$(CONFIG_FIT_SIGNATURE) := $(addprefix lib/rsa/, \
 					rsa-sign.o rsa-verify.o \
 					rsa-mod-exp.o) \
 
+ECC_OBJS-$(CONFIG_FIT_SIGNATURE) := $(addprefix lib/ecc/, \
+					ecc-sign.o ecc-verify.o)
+
 CHECKSUM_OBJS-$(CONFIG_FIT_SIGNATURE) := $(addprefix lib/, \
 					checksum.o)
 
 ROCKCHIP_OBS = lib/rc4.o rkcommon.o rkimage.o rksd.o rkspi.o
+
+CYRES_OBJS-$(CONFIG_FIT_SIGNATURE) := $(addprefix ../external/RIoT/CyReP/, \
+					RiotAes128.o RiotBase64.o RiotCrypt.o RiotDerEnc.o \
+					RiotEcc.o RiotHmac.o RiotKdf.o RiotSha256.o \
+					RiotX509Bldr.o)
 
 # common objs for dumpimage and mkimage
 dumpimage-mkimage-objs := aisimage.o \
@@ -119,7 +127,10 @@ dumpimage-mkimage-objs := aisimage.o \
 			gpimage.o \
 			gpimage-common.o \
 			$(RSA_OBJS-y) \
-			$(CHECKSUM_OBJS-y)
+			$(ECC_OBJS-y) \
+			$(CHECKSUM_OBJS-y) \
+			$(CYRES_OBJS-y)
+
 
 dumpimage-objs := $(dumpimage-mkimage-objs) dumpimage.o
 mkimage-objs   := $(dumpimage-mkimage-objs) mkimage.o
@@ -159,6 +170,7 @@ ifeq ($(HOSTOS),darwin)
 HOSTCFLAGS_mxsimage.o += -Wno-deprecated-declarations
 HOSTCFLAGS_image-sig.o += -Wno-deprecated-declarations
 HOSTCFLAGS_rsa-sign.o += -Wno-deprecated-declarations
+HOSTCFLAGS_ecc-sign.o += -Wno-deprecated-declarations
 endif
 endif
 

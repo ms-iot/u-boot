@@ -173,6 +173,8 @@ config AES
 	  present.
 
 source lib/rsa/Kconfig
+source lib/cyres/Kconfig
+source lib/ecc/Kconfig
 
 config TPM
 	bool "Trusted Platform Module (TPM) Support"
@@ -218,6 +220,14 @@ config SHA256
 	  The hash is calculated in software.
 	  The SHA256 algorithm produces a 256-bit (32-byte) hash value
 	  (digest).
+
+config USE_TINY_SHA256
+	bool "Use tiny SHA256 implementation"
+	select SHA256
+	select CONFIG_CYRES
+	help
+	  This option swaps out the default SHA256 software implementation
+	  for a smaller AllSeen based implementation provided by CyRes Crypt.
 
 config SHA_HW_ACCEL
 	bool "Enable hashing using hardware"

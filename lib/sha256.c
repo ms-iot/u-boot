@@ -20,6 +20,7 @@ const uint8_t sha256_der_prefix[SHA256_DER_LEN] = {
 	0x00, 0x04, 0x20
 };
 
+#ifndef CONFIG_USE_TINY_SHA256
 /*
  * 32-bit integer manipulation macros (big endian)
  */
@@ -255,6 +256,7 @@ void sha256_finish(sha256_context * ctx, uint8_t digest[32])
 	PUT_UINT32_BE(ctx->state[6], digest, 24);
 	PUT_UINT32_BE(ctx->state[7], digest, 28);
 }
+#endif /* CONFIG_USE_TINY_SHA256 */
 
 /*
  * Output = SHA-256( input buffer ). Trigger the watchdog every 'chunk_sz'

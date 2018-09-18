@@ -1,0 +1,16 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file Documentation/kbuild/kconfig-language.txt in the
+# Linux kernel source tree.
+#
+
+config CYRES
+	bool
+	prompt "Enable CyRes"
+	default n
+	help
+	  Enable support for the Cyres library.
+	  Cyres provides a tiny ECC and SHA256 software implementation.
+	  Cyres also combines a device-unique secret with a measurement
+	  of the next boot stage to create a certificate chain that is unique
+	  to the device and version of firmware running on the device.

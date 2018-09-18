@@ -266,7 +266,7 @@ config FIT_SIGNATURE
 	bool "Enable signature verification of FIT uImages"
 	depends on DM
 	select HASH
-	select RSA
+	select RSA if !ECC
 	help
 	  This option enables signature verification of FIT uImages,
 	  using a hash signed and verified using RSA. If
@@ -336,9 +336,8 @@ config SPL_FIT_PRINT
 
 config SPL_FIT_SIGNATURE
 	bool "Enable signature verification of FIT firmware within SPL"
-	depends on SPL_DM
 	select SPL_FIT
-	select SPL_RSA
+	select SPL_RSA if !SPL_ECC
 
 config SPL_FIT_SIGNATURE_STRICT
 	bool "Halt if loadables or firmware don't pass FIT signature verification"

@@ -1,0 +1,14 @@
+config ECC
+	bool "Use ECC Library"
+	select CONFIG_CYRES
+	help
+	  ECC support. This enables the ECC algorithm used for FIT image
+	  verification in U-Boot.
+	  See doc/uImage.FIT/signature.txt for more details.
+	  The P-256 algorithm in ECC is implemented using CyRes crypt.
+	  The signing part is build into mkimage regardless of this
+	  option.
+
+config SPL_ECC
+	bool "Use ECC Library within SPL"
+	select ECC

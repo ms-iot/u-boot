@@ -17,6 +17,8 @@ if RSA
 
 config SPL_RSA
 	bool "Use RSA Library within SPL"
+	depends on SPL_DM
+	depends on RSA
 
 config RSA_SOFTWARE_EXP
 	bool "Enable driver for RSA Modular Exponentiation in software"

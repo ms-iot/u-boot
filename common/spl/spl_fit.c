@@ -10,6 +10,8 @@
 #include <linux/libfdt.h>
 #include <spl.h>
 
+DECLARE_GLOBAL_DATA_PTR;
+
 #ifndef CONFIG_SYS_BOOTM_LEN
 #define CONFIG_SYS_BOOTM_LEN	(64 << 20)
 #endif
@@ -247,9 +249,14 @@ static int spl_load_fit_image(struct spl_load_info *info, ulong sector,
 #ifdef CONFIG_SPL_FIT_SIGNATURE
 	printf("## Checking hash(es) for Image %s ... ",
 	       fit_get_name(fit, node, NULL));
-	if (!fit_image_verify_with_data(fit, node,
-					 src, length))
+	if (!fit_image_verify_with_data(fit, node, src, length)) {
+#ifdef CONFIG_SPL_FIT_SIGNATURE_STRICT
+		printf("Invalid signature found in a required image. Halting...\n");
+		hang();
+#else
 		return -EPERM;
+#endif
+	}
 	puts("OK\n");
 #endif
 
@@ -359,6 +366,9 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 	int images, ret;
 	int base_offset, align_len = ARCH_DMA_MINALIGN - 1;
 	int index = 0;
+#ifdef CONFIG_SPL_FIT_SIGNATURE_STRICT
+	int cfg_noffset;
+#endif
 
 	/*
 	 * For FIT with external data, figure out where the external images
@@ -394,6 +404,20 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 	      sector, sectors, fit, count);
 	if (count == 0)
 		return -EIO;
+
+#ifdef CONFIG_SPL_FIT_SIGNATURE_STRICT
+	cfg_noffset = fit_conf_get_node(fit, NULL);
+	if (cfg_noffset >= 0) {
+		if(fit_config_verify(fit, cfg_noffset)) {
+			printf("%s: Unable to verify the required config.\n", __func__);
+			hang();
+		}
+	} else {
+		printf("%s: SPL_FIT_SIGNATURE_STRICT requires a config node in FIT\n",
+		       __func__);
+		hang();
+	}
+#endif /* CONFIG_SPL_FIT_SIGNATURE_STRICT */
 
 	/* find the node holding the images information */
 	images = fdt_path_offset(fit, FIT_IMAGES_PATH);

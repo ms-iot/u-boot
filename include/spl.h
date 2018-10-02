@@ -311,6 +311,10 @@ void spl_invoke_atf(struct spl_image_info *spl_image);
  */
 void board_return_to_bootrom(void);
 
+#ifdef CONFIG_SPL_ENABLE_CACHES
+void spl_enable_caches(void);
+#endif
+
 #ifdef CONFIG_SPL_OPTEE_BOOT
 #include <tee/optee.h>
 

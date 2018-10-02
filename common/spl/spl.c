@@ -497,6 +497,10 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 	timer_init();
 #endif
 
+#ifdef CONFIG_SPL_ENABLE_CACHES
+	spl_enable_caches();
+#endif
+
 #if CONFIG_IS_ENABLED(BOARD_INIT)
 	spl_board_init();
 #endif
@@ -636,3 +640,21 @@ ulong spl_relocate_stack_gd(void)
 	return 0;
 #endif
 }
+
+#ifdef CONFIG_SPL_ENABLE_CACHES
+void spl_enable_caches(void)
+{
+	u32 reg __maybe_unused;
+
+	/* init dram size in global data */
+	dram_init();
+
+	/* populate address of dram, which is used by enable_caches */
+	dram_init_banksize();
+
+	/* place the page table at the bottom of OCRAM on a 16kb aligned boundary. */
+	gd->arch.tlb_addr = ALIGN(0x00900000, 0x4000);
+
+	enable_caches();
+}
+#endif

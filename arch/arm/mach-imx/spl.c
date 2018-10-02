@@ -235,7 +235,7 @@ __weak void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 
 #endif
 
-#if defined(CONFIG_MX6) && defined(CONFIG_SPL_OS_BOOT)
+#if (defined(CONFIG_MX6) && defined(CONFIG_SPL_OS_BOOT)) || defined(CONFIG_SPL_ENABLE_CACHES)
 int dram_init_banksize(void)
 {
 	gd->bd->bi_dram[0].start = CONFIG_SYS_SDRAM_BASE;

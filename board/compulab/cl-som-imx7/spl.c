@@ -16,6 +16,8 @@
 #include <asm/arch-mx7/mx7-ddr.h>
 #include "common.h"
 
+DECLARE_GLOBAL_DATA_PTR;
+
 #ifdef CONFIG_FSL_ESDHC
 
 static struct fsl_esdhc_cfg cl_som_imx7_spl_usdhc_cfg = {
@@ -182,6 +184,21 @@ void board_init_f(ulong dummy)
 	memset(__bss_start, 0, __bss_end - __bss_start);
 	/* load/boot image from boot device */
 	board_init_r(NULL, 0);
+}
+
+int dram_init(void)
+{
+	ulong ram_size_test, ram_size = 0;
+
+	for (ram_size = SZ_2G; ram_size >= SZ_256M; ram_size >>= 1) {
+		cl_som_imx7_spl_dram_cfg_size(ram_size);
+		ram_size_test = get_ram_size((long int *)PHYS_SDRAM, ram_size);
+		if (ram_size_test == ram_size)
+			break;
+	}
+	gd->ram_size = ram_size;
+
+	return 0;
 }
 
 void spl_board_init(void)

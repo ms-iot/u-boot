@@ -43,6 +43,11 @@ config SPL_BOARD_INIT
 	  spl_board_init() from board_init_r(). This function should be
 	  provided by the board.
 
+config SPL_ENABLE_CACHES
+	bool "Enable caches in SPL"
+	help
+	  If this option is enabled, U-Boot will enable caches during SPL
+
 config SPL_BOOTROM_SUPPORT
         bool "Support returning to the BOOTROM"
 	help

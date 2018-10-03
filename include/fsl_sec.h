@@ -144,8 +144,14 @@ typedef struct ccsr_sec {
 #define SEC_CCBVID_ERA_SHIFT		24
 #define SEC_SCFGR_RDBENABLE		0x00000400
 #define SEC_SCFGR_VIRT_EN		0x00008000
+#define SEC_SCFGR_PRIBLOB_MASK		0x00000003
+#define SEC_SCFGR_PRIBLOB_NORMAL	0x3
 #define SEC_CHAVID_LS_RNG_SHIFT		16
 #define SEC_CHAVID_RNG_LS_MASK		0x000f0000
+#define SEC_CSTA_MOO_MASK		0x00000300
+#define SEC_CSTA_MOO_SECURE		0x00000100
+#define SEC_CSTA_MOO_TRUSTED		0x00000200
+
 
 #define CONFIG_JRSTARTR_JR0		0x00000001
 
@@ -317,6 +323,10 @@ int fsl_get_random_bytes(uint8_t *buf, size_t len);
 int sec_init_idx(uint8_t);
 #endif
 int sec_init(void);
+#endif
+
+#ifdef CONFIG_CYRES
+int blob_key_verif(u32 bkek[8]);
 #endif
 
 #endif /* __FSL_SEC_H */

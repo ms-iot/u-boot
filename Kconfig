@@ -480,6 +480,16 @@ config ARCH_FIXUP_FDT_MEMORY
 	  used for booting OS with different memory setup where the part of
 	  the memory location should be used for different purpose.
 
+config CYRES
+	bool
+	prompt "Enable CyRes"
+	default n
+	help
+	  Enable support for CyRes. CyRes combines a device-unique secret with
+	  a measurement of the next boot stage to create an identity 
+	  that is unique to the device and version of firmware running
+	  on the device.
+
 endmenu		# Boot images
 
 source "api/Kconfig"

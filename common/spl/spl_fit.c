@@ -369,6 +369,12 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 #ifdef CONFIG_SPL_FIT_SIGNATURE_STRICT
 	int cfg_noffset;
 #endif
+#ifdef CONFIG_CYRES
+	int image_noffset = 0;
+	int noffset = 0;
+	uint8_t *fit_value = NULL;
+	int fit_value_len;
+#endif
 
 	/*
 	 * For FIT with external data, figure out where the external images
@@ -418,6 +424,25 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 		hang();
 	}
 #endif /* CONFIG_SPL_FIT_SIGNATURE_STRICT */
+#ifdef CONFIG_CYRES
+	image_noffset = fit_image_get_node(fit, "optee");
+	if (image_noffset < 0) {
+		debug("%s: Cannot find optee image\n", __func__);
+		return -1;
+	}
+	fdt_for_each_subnode(noffset, fit, image_noffset) {
+		const char *name = fit_get_name(fit, noffset, NULL);
+		if (!strncmp(name, FIT_HASH_NODENAME,
+			     strlen(FIT_HASH_NODENAME))) {
+			ret = fit_image_hash_get_value(fit, noffset, &fit_value,
+						       &fit_value_len);
+			if (ret == 0) {
+				cyres_save_optee_measurement(fit_value,
+							     fit_value_len);
+			}
+		}
+	}
+#endif /* CONFIG_CYRES */
 
 	/* find the node holding the images information */
 	images = fdt_path_offset(fit, FIT_IMAGES_PATH);

@@ -323,6 +323,28 @@ struct optee_image_info {
 };
 #endif
 
+#ifdef CONFIG_CYRES
+struct cyres_cdi {
+	u32 cdi[8];
+};
+/**
+ * cyres_read_and_hide_cdi() - read the compound device identity and make it
+ *                             inaccessible, then save hashed value in caam.
+ *
+ * @return 0 if secret was successfully read and hidden, else nonzero
+ */
+int cyres_read_and_hide_cdi(void);
+
+/**
+ * cyres_save_optee_measurement- has optee's hash with CDI then save in caam
+ * @param hash_value - pointer to optee's hash
+ * @param hash_value_len - length of optee's hash
+ *
+ * @return 0 on success, otherwise error code
+ */
+int cyres_save_optee_measurement(uint8_t *hash_value, size_t hash_value_len);
+#endif
+
 /**
  * spl_perform_fixups() - arch/board-specific callback before processing
  *                        the boot-payload

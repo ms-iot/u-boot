@@ -235,7 +235,7 @@ config SPL_MD5_SUPPORT
 config SPL_SHA1_SUPPORT
 	bool "Support SHA1"
 	depends on SPL_FIT
-	select SHA1
+	select SHA1 if !FORBID_SHA1
 	help
 	  Enable this to support SHA1 in FIT images within SPL. A SHA1
 	  checksum is a 160-bit (20-byte) hash value used to check that the
@@ -292,7 +292,7 @@ config SPL_CRYPTO_SUPPORT
 
 config SPL_HASH_SUPPORT
 	bool "Support hashing drivers"
-	select SHA1
+	select SHA1 if !FORBID_SHA1
 	select SHA256
 	help
 	  Enable hashing drivers in SPL. These drivers can be used to

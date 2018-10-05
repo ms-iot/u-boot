@@ -1136,9 +1136,14 @@ int calculate_hash(const void *data, int data_len, const char *algo,
 		*((uint32_t *)value) = cpu_to_uimage(*((uint32_t *)value));
 		*value_len = 4;
 	} else if (IMAGE_ENABLE_SHA1 && strcmp(algo, "sha1") == 0) {
+#ifdef CONFIG_SHA1
 		sha1_csum_wd((unsigned char *)data, data_len,
 			     (unsigned char *)value, CHUNKSZ_SHA1);
 		*value_len = 20;
+#else
+		debug("Unsupported hash alogrithm\n");
+		return -1;
+#endif
 	} else if (IMAGE_ENABLE_SHA256 && strcmp(algo, "sha256") == 0) {
 		sha256_csum_wd((unsigned char *)data, data_len,
 			       (unsigned char *)value, CHUNKSZ_SHA256);

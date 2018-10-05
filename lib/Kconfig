@@ -246,6 +246,12 @@ config SHA_PROG_HW_ACCEL
 	  Data can be streamed in a block at a time and the hashing
 	  is performed in hardware.
 
+config FORBID_SHA1
+	bool "Block SHA1 support"
+	default n
+	help
+	  This option explicitly disables the inclusion of SHA1 hashing algorithms.
+
 config MD5
 	bool
 

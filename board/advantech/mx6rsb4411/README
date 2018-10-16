@@ -1,0 +1,41 @@
+How to use and build U-Boot on mx6rsb4411
+-----------------------------------------
+
+There are two methods to build U-Boot for mx6rsb4411.
+
+1. Build U-Boot directly
+------------------------
+
+mx6rsb4411a1_nt_defconfig target supports Advantech RSB-4411 device.
+
+In order to build it:
+
+$ make mx6rsb4411a1_nt_defconfig
+
+$ make
+
+This will generate the SPL and u-boot-ivt.img binaries.
+
+- Flash the SPL binary into the SD card:
+
+$ sudo dd if=SPL of=/dev/sdX bs=512 seek=2 ; sync ; sync
+
+- Flash the u-boot-ivt.img binary into the SD card:
+
+$ sudo dd if=u-boot-ivt.img of=/dev/sdX bs=512 seek=138 ; sync ; sync
+
+
+2. Build with project-kayla
+---------------------------
+
+This method is recommended because the firmware binary can be used to generate FFU image.
+
+$ cd project-kayla/build/firmware/RSB4411_iMX6Q_1GB
+
+$ make
+
+This will generate a firmware_fit.merged binary, which consists of SPL, u-boot-ivt.img, and tee.bin (OP-TEE image).
+
+- Flash the firmware binary into the SD card:
+
+$ sudo dd if=firmware_fit.merged of=/dev/sdX bs=512 seek=2 ; sync ; sync

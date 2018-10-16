@@ -288,6 +288,15 @@ config TARGET_MX6Q_ENGICAM
 	select SUPPORT_SPL
 	imply CMD_DM
 
+config TARGET_MX6RSB4411A1
+	bool "mx6rsb4411a1"
+	select MX6QDL
+	select BOARD_LATE_INIT
+	select SUPPORT_SPL
+	select DM
+	select DM_THERMAL
+	select BOARD_EARLY_INIT_F
+
 config TARGET_MX6SABREAUTO
 	bool "mx6sabreauto"
 	select BOARD_EARLY_INIT_F
@@ -536,6 +545,7 @@ config SYS_SOC
 
 source "board/ge/bx50v3/Kconfig"
 source "board/advantech/dms-ba16/Kconfig"
+source "board/advantech/mx6rsb4411/Kconfig"
 source "board/aristainetos/Kconfig"
 source "board/armadeus/opos6uldev/Kconfig"
 source "board/bachmann/ot1200/Kconfig"

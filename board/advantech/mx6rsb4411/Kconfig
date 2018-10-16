@@ -1,0 +1,12 @@
+if TARGET_MX6RSB4411A1
+
+config SYS_BOARD
+	default "mx6rsb4411"
+
+config SYS_VENDOR
+	default "advantech"
+
+config SYS_CONFIG_NAME
+	default "mx6rsb4411"
+
+endif

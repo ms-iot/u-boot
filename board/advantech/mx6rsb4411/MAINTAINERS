@@ -1,0 +1,6 @@
+MX6RSB4411A1 BOARD
+M:	RISC team <advrisc@gmail.com>
+S:	Maintained
+F:	board/advantech/mx6rsb4411/
+F:	include/configs/mx6rsb4411.h
+F:	configs/mx6rsb4411a1_nt_defconfig

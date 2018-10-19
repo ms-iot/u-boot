@@ -192,3 +192,36 @@ err:
 	return ret;
 }
 #endif
+
+int blob_key_verif(u32 bkek[8])
+{
+	int ret;
+	unsigned long addr;
+
+	ALLOC_CACHE_ALIGN_BUFFER(u32, desc, MAX_CAAM_DESCSIZE);
+	ALLOC_CACHE_ALIGN_BUFFER(u8, key_mod, KEY_IDNFR_SZ_BYTES);
+	ALLOC_CACHE_ALIGN_BUFFER(u32, result_buf, 8);
+
+	inline_cnstr_jobdesc_blob_encap_format(desc, key_mod, key_mod,
+		(u8 *)result_buf, KEY_IDNFR_SZ_BYTES,
+		BLOB_FORMAT_MASTER_KEY_VERIFICATION);
+
+	/* initialize and flush the key identifier */
+	memset(key_mod, 0, KEY_IDNFR_SZ_BYTES);
+	addr = (unsigned long)key_mod;
+	flush_dcache_range(
+		addr,
+		ALIGN(addr + KEY_IDNFR_SZ_BYTES, ARCH_DMA_MINALIGN));
+
+	/* invalidate the result buffer */
+	addr = (unsigned long)result_buf;
+	invalidate_dcache_range(
+		addr,
+		ALIGN(addr + sizeof(uint32_t) * 8, ARCH_DMA_MINALIGN));
+
+	ret = run_descriptor_jr(desc);
+
+	memcpy(bkek, result_buf, sizeof(uint32_t) * 8);
+
+	return ret;
+}

@@ -34,6 +34,10 @@ endif
 
 ifneq ($(CONFIG_ARCH_LS1012A),)
 obj-$(CONFIG_SYS_HAS_SERDES) += ls1012a_serdes.o
+ifdef CONFIG_SPL_BUILD
+obj-$(CONFIG_CYRES) += ls1012a_hw_ident.o
+obj-$(CONFIG_CYRES) += ls1012a_hab.o
+endif
 endif
 
 ifneq ($(CONFIG_ARCH_LS1046A),)

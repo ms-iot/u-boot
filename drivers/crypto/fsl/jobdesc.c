@@ -208,25 +208,9 @@ void inline_cnstr_jobdesc_blob_encap(uint32_t *desc, uint8_t *key_idnfr,
 				     uint8_t *plain_txt, uint8_t *enc_blob,
 				     uint32_t in_sz)
 {
-	dma_addr_t dma_addr_key_idnfr, dma_addr_in, dma_addr_out;
-	uint32_t key_sz = KEY_IDNFR_SZ_BYTES;
-	/* output blob will have 32 bytes key blob in beginning and
-	 * 16 byte HMAC identifier at end of data blob */
-	uint32_t out_sz = in_sz + KEY_BLOB_SIZE + MAC_SIZE;
-
-	dma_addr_key_idnfr = virt_to_phys((void *)key_idnfr);
-	dma_addr_in	= virt_to_phys((void *)plain_txt);
-	dma_addr_out	= virt_to_phys((void *)enc_blob);
-
-	init_job_desc(desc, 0);
-
-	append_key(desc, dma_addr_key_idnfr, key_sz, CLASS_2);
-
-	append_seq_in_ptr(desc, dma_addr_in, in_sz, 0);
-
-	append_seq_out_ptr(desc, dma_addr_out, out_sz, 0);
-
-	append_operation(desc, OP_TYPE_ENCAP_PROTOCOL | OP_PCLID_BLOB);
+	inline_cnstr_jobdesc_blob_encap_format(desc, key_idnfr, plain_txt,
+					       enc_blob, in_sz,
+					       BLOB_FORMAT_NORMAL);
 }
 
 void inline_cnstr_jobdesc_blob_decap(uint32_t *desc, uint8_t *key_idnfr,
@@ -252,6 +236,33 @@ void inline_cnstr_jobdesc_blob_decap(uint32_t *desc, uint8_t *key_idnfr,
 	append_operation(desc, OP_TYPE_DECAP_PROTOCOL | OP_PCLID_BLOB);
 }
 #endif
+void inline_cnstr_jobdesc_blob_encap_format(uint32_t *desc, uint8_t *key_idnfr,
+				uint8_t *plain_txt, uint8_t *enc_blob,
+				uint32_t in_sz, enum BLOB_FORMAT blob_format)
+{
+	dma_addr_t dma_addr_key_idnfr, dma_addr_in, dma_addr_out;
+	uint32_t key_sz = KEY_IDNFR_SZ_BYTES;
+	/*
+	 * output blob will have 32 bytes key blob in beginning and
+	 * 16 byte HMAC identifier at end of data blob
+	 */
+	uint32_t out_sz = in_sz + KEY_BLOB_SIZE + MAC_SIZE;
+
+	dma_addr_key_idnfr = virt_to_phys((void *)key_idnfr);
+	dma_addr_in	= virt_to_phys((void *)plain_txt);
+	dma_addr_out	= virt_to_phys((void *)enc_blob);
+
+	init_job_desc(desc, 0);
+
+	append_key(desc, dma_addr_key_idnfr, key_sz, CLASS_2);
+
+	append_seq_in_ptr(desc, dma_addr_in, in_sz, 0);
+
+	append_seq_out_ptr(desc, dma_addr_out, out_sz, 0);
+
+	append_operation(desc, OP_TYPE_ENCAP_PROTOCOL | OP_PCLID_BLOB |
+			 blob_format);
+}
 /*
  * Descriptor to instantiate RNG State Handle 0 in normal mode and
  * load the JDKEK, TDKEK and TDSK registers

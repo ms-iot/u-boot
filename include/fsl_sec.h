@@ -144,6 +144,8 @@ typedef struct ccsr_sec {
 #define SEC_CCBVID_ERA_SHIFT		24
 #define SEC_SCFGR_RDBENABLE		0x00000400
 #define SEC_SCFGR_VIRT_EN		0x00008000
+#define SEC_SCFGR_PRIBLOB_MASK		0x00000003
+#define SEC_SCFGR_PRIBLOB_NORMAL	0x3
 #define SEC_CHAVID_LS_RNG_SHIFT		16
 #define SEC_CHAVID_RNG_LS_MASK		0x000f0000
 
@@ -294,6 +296,8 @@ struct sg_entry {
 #define ERROR_IN_PAGE_ALLOC	1
 #define ECONSTRJDESC   -1
 
+#else
+#define WRP_HDR_SIZE		0x08
 #endif
 
 /* blob_dek:
@@ -310,5 +314,7 @@ int sec_init_idx(uint8_t);
 #endif
 int sec_init(void);
 #endif
+
+int blob_key_verif(u32 bkek[8]);
 
 #endif /* __FSL_SEC_H */

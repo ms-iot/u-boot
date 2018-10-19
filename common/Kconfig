@@ -655,7 +655,36 @@ config AVB_VERIFY
 	    * Helpers to access MMC, similar to drivers/fastboot/fb_mmc.c.
 	    * Helpers to alloc/init/free avb ops.
 
+config CYRES
+	bool "Enable CYRES"
+	depends on SPL
+	help
+	  Enable support for Cyres. Cyres combines a device-unique secret with
+	  a measurement of the next boot stage to create a certificate chain
+	  that is unique to the device and version of firmware running
+	  on the device.
+
 endmenu
+
+menu "Cyres configuration"
+	depends on CYRES
+
+config CYRES_CERT_CHAIN_ADDR
+	hex "Address in memory to store Cyres certificate chain."
+
+config CYRES_CERT_CHAIN_SIZE
+	hex "Size of buffer allocated to hold certificate chain"
+
+config CYRES_CERT_CHAIN_PATH_LENGTH
+	int "Path length of the root cert of the certificate chain"
+
+config CYRES_KEY_BLOB_ADDR
+	hex "Address in memory to store next image private keys"
+
+config CYRES_KEY_BLOB_SIZE
+	hex "Size of buffer allocated to hold key store"
+
+endmenu # Cyres
 
 menu "Update support"
 
@@ -675,7 +704,7 @@ config UPDATE_TFTP_MSEC_MAX
 	int "Delay in mSec to wait for the TFTP server during auto-update"
 	default 100
 	depends on UPDATE_TFTP
-
 endmenu
+
 
 source "common/spl/Kconfig"

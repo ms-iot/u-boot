@@ -27,6 +27,7 @@ static int lineno = -1;
 static struct pbl_header pblimage_header;
 static int uboot_size;
 static int arch_flag;
+static char soc_name[64];
 
 static uint32_t pbl_cmd_initaddr;
 static uint32_t pbi_crc_cmd1;
@@ -103,6 +104,68 @@ static void check_get_hexval(char *token)
 	}
 }
 
+/* Process directives of the form: .soc ls1012a */
+static void process_soc_directive(char *line, char **saveptr)
+{
+	char *token;
+
+	if (soc_name[0] != '\0') {
+		printf("Error:%s:%d - .soc directive can only be "
+		       "specified once\n",
+		       fname, lineno);
+
+		exit(EXIT_FAILURE);
+	}
+
+	/* Second token is the soc name */
+	token = strtok_r(NULL, " \t\r\n", saveptr);
+	if (!token) {
+		printf("Error:%s:%d - expecting argument to .soc directive\n",
+			fname, lineno);
+		exit(EXIT_FAILURE);
+	}
+
+	strncpy(soc_name, token, sizeof(soc_name));
+}
+
+static void process_directives(char *name)
+{
+	FILE *fd = NULL;
+	char *line = NULL;
+	char *token, *saveptr1;
+	size_t len = 0;
+
+	fname = name;
+	fd = fopen(name, "r");
+	if (fd == NULL) {
+		printf("Error:%s - Can't open\n", fname);
+		exit(EXIT_FAILURE);
+	}
+
+	lineno = 0;
+	while ((getline(&line, &len, fd)) > 0) {
+		lineno++;
+		token = strtok_r(line, " \t\r\n", &saveptr1);
+		/* drop all lines with zero tokens (= empty lines) */
+		if (token == NULL)
+			continue;
+
+		/* process lines starting with . as directives */
+		if (token[0] == '.') {
+			if (!strcmp(token, ".soc")) {
+				process_soc_directive(line, &saveptr1);
+			} else {
+				printf("Error:%s:%d invalid directive: %s\n",
+					fname, lineno, line);
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
+	if (line)
+		free(line);
+	fclose(fd);
+}
+
 static void pbl_parser(char *name)
 {
 	FILE *fd = NULL;
@@ -117,6 +180,7 @@ static void pbl_parser(char *name)
 		exit(EXIT_FAILURE);
 	}
 
+	lineno = 0;
 	while ((getline(&line, &len, fd)) > 0) {
 		lineno++;
 		token = strtok_r(line, "\r\n", &saveptr1);
@@ -129,6 +193,9 @@ static void pbl_parser(char *name)
 				break;
 			/* Drop all text starting with '#' as comments */
 			if (token[0] == '#')
+				break;
+			/* Drop all lines starting with . directive */
+			if (token[0] == '.')
 				break;
 			check_get_hexval(token);
 		}
@@ -188,6 +255,11 @@ void pbl_load_uboot(int ifd, struct image_tool_params *params)
 {
 	FILE *fp_uboot;
 	int size;
+
+	if (!strcmp(soc_name, "ls1012a")) {
+		ls1012a_pbl_load_uboot(ifd, params);
+		return;
+	}
 
 	/* parse the rcw.cfg file. */
 	pbl_parser(params->imagename);
@@ -266,6 +338,13 @@ int pblimage_check_params(struct image_tool_params *params)
 
 	if (!params)
 		return EXIT_FAILURE;
+
+	/* look for configuration directives */
+	process_directives(params->imagename);
+
+	if (!strcmp(soc_name, "ls1012a")) {
+		return ls1012a_pblimage_check_params(params);
+	}
 
 	if (params->datafile) {
 		fp_uboot = fopen(params->datafile, "r");

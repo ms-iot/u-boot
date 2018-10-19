@@ -68,6 +68,9 @@ endif
 ifdef CONFIG_SPL_BUILD
 obj-$(CONFIG_SPL_YMODEM_SUPPORT) += crc16.o
 obj-$(CONFIG_SPL_NET_SUPPORT) += net_utils.o
+obj-$(CONFIG_CYRES) += cyres_cert_chain.o
+obj-$(CONFIG_CYRES) += cyres/
+obj-$(CONFIG_CYRES) += tinycbor/
 endif
 obj-$(CONFIG_ADDR_MAP) += addr_map.o
 obj-y += hashtable.o

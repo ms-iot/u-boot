@@ -5,12 +5,15 @@
 
 #include <common.h>
 #include <errno.h>
+#include <cyres.h>
+#include <u-boot/sha256.h>
 #include <linux/kernel.h>
 #include <asm/io.h>
 #include <asm/system.h>
 #include <asm/types.h>
 #include <asm/macro.h>
 #include <asm/armv8/sec_firmware.h>
+#include <fsl_hab.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 extern void c_runtime_cpu_setup(void);
@@ -33,6 +36,10 @@ phys_addr_t sec_firmware_addr;
 #endif
 #ifndef SEC_FIRMWARE_TARGET_EL
 #define SEC_FIRMWARE_TARGET_EL		2
+#endif
+
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_CYRES)
+sha256_context ppa_optee_sha256_ctx;
 #endif
 
 static int sec_firmware_get_data(const void *sec_firmware_img,
@@ -187,6 +194,12 @@ static int sec_firmware_check_copy_loadable(const void *sec_firmware_img,
 		flush_dcache_range(sec_firmware_loadable_addr,
 				   sec_firmware_loadable_addr + size);
 
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_CYRES)
+		sha256_update(&ppa_optee_sha256_ctx,
+			      (const uint8_t *)sec_firmware_loadable_addr,
+			      (uint32_t)size);
+#endif
+
 		/* Populate loadable address only for Trusted OS */
 		if (!strcmp(str, "trustedOS@1")) {
 			/*
@@ -272,6 +285,13 @@ static int sec_firmware_load_image(const void *sec_firmware_img,
 	if (ret)
 		goto out;
 
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_CYRES)
+	sha256_update(&ppa_optee_sha256_ctx,
+		      (const uint8_t *)(sec_firmware_addr &
+					SEC_FIRMWARE_ADDR_MASK),
+		      (uint32_t)raw_image_size);
+#endif
+
 	/*
 	 * Check if any loadable are present along with firmware image, if
 	 * present load them.
@@ -348,11 +368,7 @@ unsigned int sec_firmware_support_psci_version(void)
  */
 bool sec_firmware_support_hwrng(void)
 {
-	if (sec_firmware_addr & SEC_FIRMWARE_RUNNING) {
-			return true;
-	}
-
-	return false;
+	return current_el() < 3;
 }
 
 /*
@@ -406,6 +422,16 @@ int sec_firmware_init(const void *sec_firmware_img,
 			u32 *loadable_h)
 {
 	int ret;
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_CYRES)
+	struct build_cyres_cert_chain_args args;
+	size_t spl_auth_key_pub_size;
+	u8 spl_auth_key_pub[0x100];
+	u8 fake_auth_key_pub[270] = { 0 }; /* XXX implement when authenticated
+					    boot is available */
+	u8 ppa_optee_digest[SHA256_SUM_LEN];
+
+	sha256_starts(&ppa_optee_sha256_ctx);
+#endif
 
 	if (!sec_firmware_is_valid(sec_firmware_img))
 		return -EINVAL;
@@ -416,6 +442,31 @@ int sec_firmware_init(const void *sec_firmware_img,
 		printf("SEC Firmware: Failed to load image\n");
 		return ret;
 	} else if (sec_firmware_addr & SEC_FIRMWARE_LOADED) {
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_CYRES)
+		sha256_finish(&ppa_optee_sha256_ctx, ppa_optee_digest);
+
+		ret = get_spl_auth_key_pub(spl_auth_key_pub,
+					   sizeof(spl_auth_key_pub),
+					   &spl_auth_key_pub_size);
+		if (ret) {
+			/* not a fatal error */
+			spl_auth_key_pub_size = 0;
+		}
+
+		memset(&args, 0, sizeof(args));
+		args.spl_auth_key_pub = spl_auth_key_pub;
+		args.spl_auth_key_pub_size = spl_auth_key_pub_size;
+		args.next_image_name = "OP-TEE";
+		args.next_image_digest = ppa_optee_digest;
+		args.next_image_digest_size = sizeof(ppa_optee_digest);
+		args.next_image_auth_key_pub = fake_auth_key_pub;
+		args.next_image_auth_key_pub_size = sizeof(fake_auth_key_pub);
+
+		ret = build_cyres_cert_chain(&args);
+		if (ret)
+			printf("cyres: failed to build cert chain (0x%x)!\n",
+			       ret);
+#endif
 		ret = sec_firmware_entry(eret_hold_l, eret_hold_h);
 		if (ret) {
 			printf("SEC Firmware: Failed to initialize\n");

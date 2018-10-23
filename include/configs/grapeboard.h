@@ -21,7 +21,20 @@
 #define CONFIG_DISPLAY_BOARDINFO_LATE
 #define CONFIG_MISC_INIT_R
 
+#ifdef CONFIG_SPL_BUILD
+#define CONFIG_SPL_TEXT_BASE 				0x40001000 /* QSPI0_AMBA_BASE + CONFIG_UBOOT_TEXT_OFFSET */
+#define CONFIG_SPL_MAX_SIZE				(64 * 1024)
+#define CONFIG_SYS_TEXT_BASE 				0x40021000
+#else
 #define CONFIG_SYS_TEXT_BASE 				0x40001000 /* QSPI0_AMBA_BASE + CONFIG_UBOOT_TEXT_OFFSET */
+#endif
+
+#define CONFIG_SPL_FRAMEWORK 1
+#define CONFIG_SPL_SERIAL_SUPPORT 1
+#define CONFIG_USE_TINY_PRINTF 1
+#define CONFIG_SPL_LIBCOMMON_SUPPORT 1
+#define CONFIG_SPL_LIBGENERIC_SUPPORT 1
+#define CONFIG_SPL_MPC8XXX_INIT_DDR_SUPPORT 1
 
 #define CONFIG_SYS_CLK_FREQ					125000000	/* 125MHz */
 
@@ -314,6 +327,7 @@
             "sf write $load_addr pfe $filesize;" \
         "fi\0" \
 
+#ifndef CONFIG_SPL_BUILD
 #define CONFIG_EXTRA_ENV_SETTINGS		\
 	"verify=no\0"				\
 	"fdt_high=0xffffffffffffffff\0"		\
@@ -359,6 +373,8 @@
 							 "setenv bootargs $bootargs $default_bootargs;" \
 							 "bootm $kernel_addr_r - $fdt_addr_r;" \
 			  "fi\0" \
+
+#endif
 
 #undef CONFIG_BOOTCOMMAND
 #define CONFIG_BOOTCOMMAND 	"run distro_bootcmd; run default_boot"

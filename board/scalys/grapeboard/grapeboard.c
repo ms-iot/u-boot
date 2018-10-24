@@ -26,7 +26,6 @@
 #include <fsl_sec.h>
 #include <fsl_csu.h>
 #include "usb_grapeboard.h"
-#include <../../../include/generated/autoconf.h>
 #include <usb.h>
 #include "gpio_grapeboard.h"
 #include "board_configuration_data.h"

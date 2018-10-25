@@ -535,8 +535,9 @@ const struct ubifs_lprops *ubifs_change_lp(struct ubifs_info *c,
 
 	dbg_lp("LEB %d, free %d, dirty %d, flags %d",
 	       lprops->lnum, free, dirty, flags);
-
+#ifndef __UBOOT__
 	ubifs_assert(mutex_is_locked(&c->lp_mutex));
+#endif
 	ubifs_assert(c->lst.empty_lebs >= 0 &&
 		     c->lst.empty_lebs <= c->main_lebs);
 	ubifs_assert(c->freeable_cnt >= 0);

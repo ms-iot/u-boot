@@ -274,7 +274,9 @@ static inline void ubifs_get_lprops(struct ubifs_info *c)
  */
 static inline void ubifs_release_lprops(struct ubifs_info *c)
 {
+#ifndef __UBOOT__
 	ubifs_assert(mutex_is_locked(&c->lp_mutex));
+#endif
 	ubifs_assert(c->lst.empty_lebs >= 0 &&
 		     c->lst.empty_lebs <= c->main_lebs);
 	mutex_unlock(&c->lp_mutex);

@@ -696,8 +696,9 @@ static int read_block(struct inode *inode, void *addr, unsigned int block,
 			memset(addr, 0, UBIFS_BLOCK_SIZE);
 		return err;
 	}
-
+#ifndef __UBOOT__
 	ubifs_assert(le64_to_cpu(dn->ch.sqnum) > ubifs_inode(inode)->creat_sqnum);
+#endif
 
 	len = le32_to_cpu(dn->size);
 	if (len <= 0 || len > UBIFS_BLOCK_SIZE)

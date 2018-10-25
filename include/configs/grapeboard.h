@@ -168,8 +168,10 @@
 	"mtdparts=qspi@40000000.0:" \
 		"2M@0x0(u-boot)," \
 		"256k(env)," \
-		"256k(ppa)," \
 		"256k(pfe)," \
+		"1M(ppa)," \
+		"256k(u-boot_hdr)," \
+		"256k(ppa_hdr)," \
 		"-(UBI)"
 
 /* Default environment variables */
@@ -182,13 +184,29 @@
         	"sf erase u-boot 200000;" \
         	"sf write $load_addr u-boot $filesize;" \
         "fi\0" \
+	"update_tftp_uboot_hdr_qspi_nor=" \
+        "dhcp;" \
+        "tftp $load_addr $update_files_path/hdr_uboot.out;" \
+        "if test $? = \"0\"; then " \
+               "sf probe 0:0;" \
+               "sf erase u-boot_hdr 40000;" \
+               "sf write $load_addr u-boot_hdr $filesize;" \
+        "fi\0" \
 	"update_tftp_ppa_qspi_nor=" \
         "dhcp;" \
         "tftp $load_addr $update_files_path/ppa.itb;" \
         "if test $? = \"0\"; then " \
         	"sf probe 0:0;" \
-		    "sf erase ppa 40000;" \
+		    "sf erase ppa 100000;" \
             "sf write $load_addr ppa $filesize;" \
+        "fi\0" \
+	"update_tftp_ppa_hdr_qspi_nor=" \
+        "dhcp;" \
+        "tftp $load_addr $update_files_path/hdr_ppa.out;" \
+        "if test $? = \"0\"; then " \
+               "sf probe 0:0;" \
+               "sf erase ppa_hdr 40000;" \
+            "sf write $load_addr ppa_hdr $filesize;" \
         "fi\0" \
 	"update_tftp_pfe_qspi_nor=" \
         "dhcp;" \
@@ -206,13 +224,29 @@
         	"sf erase u-boot 200000;" \
         	"sf write $load_addr u-boot $filesize;" \
         "fi\0" \
+	"update_usb_uboot_hdr_qspi_nor=" \
+        "usb start;" \
+        "fatload usb 0:1 $load_addr $update_files_path/hdr_uboot.out;" \
+        "if test $? = \"0\"; then " \
+               "sf probe 0:0;" \
+               "sf erase u-boot_hdr 40000;" \
+               "sf write $load_addr u-boot_hdr $filesize;" \
+        "fi\0" \
 	"update_usb_ppa_qspi_nor=" \
         "usb start;" \
         "fatload usb 0:1 $load_addr $update_files_path/ppa.itb;" \
         "if test $? = \"0\"; then " \
         	"sf probe 0:0;" \
-		    "sf erase ppa 40000;" \
+		    "sf erase ppa 100000;" \
             "sf write $load_addr ppa $filesize;" \
+        "fi\0" \
+	"update_usb_ppa_hdr_qspi_nor=" \
+        "usb start;" \
+        "fatload usb 0:1 $load_addr $update_files_path/hdr_ppa.out;" \
+        "if test $? = \"0\"; then " \
+               "sf probe 0:0;" \
+                                  "sf erase ppa_hdr 40000;" \
+            "sf write $load_addr ppa_hdr $filesize;" \
         "fi\0" \
 	"update_usb_pfe_qspi_nor=" \
         "usb start;" \
@@ -230,13 +264,29 @@
         	"sf erase u-boot 200000;" \
         	"sf write $load_addr u-boot $filesize;" \
         "fi\0" \
+	"update_mmc_uboot_hdr_qspi_nor=" \
+        "mmc rescan;" \
+        "ext4load mmc 0:1 $load_addr $update_files_path/hdr_uboot.out;" \
+        "if test $? = \"0\"; then " \
+               "sf probe 0:0;" \
+               "sf erase u-boot_hdr 40000;" \
+               "sf write $load_addr u-boot_hdr $filesize;" \
+        "fi\0" \
 	"update_mmc_ppa_qspi_nor=" \
         "mmc rescan;" \
         "ext4load mmc 0:1 $load_addr $update_files_path/ppa.itb;" \
         "if test $? = \"0\"; then " \
         	"sf probe 0:0;" \
-		    "sf erase ppa 40000;" \
+		    "sf erase ppa 100000;" \
             "sf write $load_addr ppa $filesize;" \
+        "fi\0" \
+	"update_mmc_ppa_hdr_qspi_nor=" \
+        "mmc rescan;" \
+        "ext4load mmc 0:1 $load_addr $update_files_path/hdr_ppa.out;" \
+        "if test $? = \"0\"; then " \
+               "sf probe 0:0;" \
+                                  "sf erase ppa_hdr 40000;" \
+            "sf write $load_addr ppa_hdr $filesize;" \
         "fi\0" \
 	"update_mmc_pfe_qspi_nor=" \
         "mmc rescan;" \
@@ -274,13 +324,24 @@
 	"boot_scripts=grapeboard_boot.scr grapeboard_recovery.scr\0"	\
 	"default_bootargs=root=/dev/mmcblk0p1 rootfstype=ext4 rw rootwait\0" \
 	"default_boot=" \
-		"ext4load mmc 0:1 $fdt_addr_r /boot/grapeboard.dtb;" \
-		"ext4load mmc 0:1 $kernel_addr_r /boot/uImage;" \
-		"if test $? = \"0\"; then " \
-			"pfe stop;" \
-			"setenv bootargs $bootargs $default_bootargs;" \
-			"bootm $kernel_addr_r - $fdt_addr_r;" \
-		"fi\0" \
+			  "setenv load_succes 1;"\
+			  "ext4load mmc 0:1 $fdt_addr_r /boot/grapeboard.dtb;" \
+			  "if test $? = \"0\"; then " \
+							 "setenv load_succes 0;"\
+			  "fi;"\
+			  "env exists secureboot && ext4load mmc 0:1 $fdtheader_addr_r /boot/hdr_dtb.out;"\
+			  "env exists secureboot && esbc_validate $fdtheader_addr_r || esbc_halt;"\
+			  "ext4load mmc 0:1 $kernel_addr_r /boot/uImage;" \
+			  "if test $? = \"0\"; then " \
+							 "setenv load_succes 0;"\
+			  "fi;"\
+			  "env exists secureboot && ext4load mmc 0:1 $kernelheader_addr_r /boot/hdr_kernel.out; " \
+			  "env exists secureboot && esbc_validate $kernelheader_addr_r || esbc_halt;" \
+			  "if test $load_succes = \"0\"; then " \
+							 "pfe stop;" \
+							 "setenv bootargs $bootargs $default_bootargs;" \
+							 "bootm $kernel_addr_r - $fdt_addr_r;" \
+			  "fi\0" \
 
 #undef CONFIG_BOOTCOMMAND
 #define CONFIG_BOOTCOMMAND 	"run distro_bootcmd; run default_boot"

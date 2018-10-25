@@ -14,11 +14,11 @@ config SYS_CONFIG_NAME
 	
 config SYS_LS_PFE_FW_ADDR
 	hex "Flash address of PFE firmware"
-	default 0x40280000
+	default 0x40240000
 
 config SYS_LS_PPA_FW_ADDR
 	hex "PPA Firmware Addr"
-	default 0x40240000
+	default 0x40280000
 	
 menu "Grapeboard configuration options"
 	depends on TARGET_GRAPEBOARD
@@ -47,5 +47,7 @@ config PBL_BINARY_SRC
 		See CONCAT_PBL_UBOOT_IMAGE help.
 
 endmenu
+
+source "board/freescale/common/Kconfig"
 
 endif

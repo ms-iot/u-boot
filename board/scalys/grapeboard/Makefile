@@ -12,4 +12,7 @@ obj-y	+= board_configuration_data.o
 
 obj-$(CONFIG_LAYERSCAPE_NS_ACCESS)	+= ../../freescale/common/ns_access.o
 
-
+ifdef CONFIG_SECURE_BOOT
+obj-$(CONFIG_CMD_ESBC_VALIDATE) += fsl_validate.o cmd_esbc_validate.o
+endif
+obj-$(CONFIG_CHAIN_OF_TRUST) += fsl_chain_of_trust.o

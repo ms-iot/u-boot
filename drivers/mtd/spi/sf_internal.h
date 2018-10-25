@@ -26,8 +26,9 @@ enum spi_nor_option_flags {
 };
 
 #define SPI_FLASH_3B_ADDR_LEN		3
-#define SPI_FLASH_CMD_LEN		(1 + SPI_FLASH_3B_ADDR_LEN)
 #define SPI_FLASH_16MB_BOUN		0x1000000
+#define SPI_FLASH_4B_ADDR_LEN		4
+#define SPI_FLASH_CMD_MAX_LEN		(1 + SPI_FLASH_4B_ADDR_LEN)
 
 /* CFI Manufacture ID's */
 #define SPI_FLASH_CFI_MFR_SPANSION	0x01
@@ -144,6 +145,7 @@ struct spi_flash_info {
 #define RD_DUAL			BIT(5)	/* use Dual Read */
 #define RD_QUADIO		BIT(6)	/* use Quad IO Read */
 #define RD_DUALIO		BIT(7)	/* use Dual IO Read */
+#define ADDR_4B			BIT(8)
 #define SECT_4K_ONLY	BIT(9)  /* use only CMD_ERASE_4K */
 #define SST_ULBPR		BIT(10)	/* use SST unlock block protection */
 #define RD_FULL			(RD_QUAD | RD_DUAL | RD_QUADIO | RD_DUALIO)

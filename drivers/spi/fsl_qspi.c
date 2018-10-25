@@ -820,7 +820,10 @@ int qspi_xfer(struct fsl_qspi_priv *priv, unsigned int bitlen,
 	if (dout) {
 		if (flags & SPI_XFER_BEGIN) {
 			priv->cur_seqid = *(u8 *)dout;
-			memcpy(&txbuf, dout, 4);
+			if (fsl_qspi_current_flash_size  > SZ_16M && bytes > 4)
+				memcpy(&txbuf, dout + 1, 4);
+			else
+				memcpy(&txbuf, dout, 4);
 		}
 
 		if (flags == SPI_XFER_END) {

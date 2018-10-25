@@ -79,7 +79,6 @@
 /* SPI */
 #define CONFIG_FSL_DSPI1
 #define CONFIG_DEFAULT_SPI_BUS				0
-#define CONFIG_CMD_SPI
 #define MMAP_DSPI							DSPI1_BASE_ADDR
 #define CONFIG_SYS_DSPI_CTAR0   			1
 #define CONFIG_SYS_DSPI_CTAR1				1
@@ -156,9 +155,9 @@
 #define BOOT_TARGET_DEVICES(func) \
 	func(MMC, mmc, 0) \
 	func(USB, usb, 0) \
+	func(SCSI, scsi, 0) /*/
 	func(USB, usb, 1) \
-	func(UBIFS, ubifs, 0) \
-	func(SCSI, scsi, 0)
+	func(UBIFS, ubifs, 0)*/
 #include <config_distro_bootcmd.h>
 #endif
 
@@ -177,7 +176,7 @@
 #define COMMON_UBOOT_CONFIG \
 	"update_tftp_uboot_qspi_nor=" \
         "dhcp;" \
-        "tftp $load_addr $TFTP_PATH/u-boot-with-pbl.bin;" \
+        "tftp $load_addr $update_files_path/u-boot-with-pbl.bin;" \
         "if test $? = \"0\"; then " \
         	"sf probe 0:0;" \
         	"sf erase u-boot 200000;" \
@@ -185,7 +184,7 @@
         "fi\0" \
 	"update_tftp_ppa_qspi_nor=" \
         "dhcp;" \
-        "tftp $load_addr $TFTP_PATH/ppa.itb;" \
+        "tftp $load_addr $update_files_path/ppa.itb;" \
         "if test $? = \"0\"; then " \
         	"sf probe 0:0;" \
 		    "sf erase ppa 40000;" \
@@ -193,7 +192,7 @@
         "fi\0" \
 	"update_tftp_pfe_qspi_nor=" \
         "dhcp;" \
-        "tftp $load_addr $TFTP_PATH/pfe_fw_sbl.itb;" \
+        "tftp $load_addr $update_files_path/pfe_fw_sbl.itb;" \
         "if test $? = \"0\"; then " \
         	"sf probe 0:0;" \
 		    "sf erase pfe 40000;" \
@@ -268,7 +267,7 @@
 	"ethprime=pfe_eth0\0" \
 	"ethaddr=02:00:00:ba:be:01\0" \
 	"eth1addr=02:00:00:ba:be:02\0" \
-	"TFTP_PATH=.\0" \
+	"update_files_path=.\0" \
 	"autoload=no\0" \
 	COMMON_UBOOT_CONFIG \
 	BOOTENV					\

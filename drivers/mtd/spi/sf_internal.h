@@ -101,6 +101,7 @@ enum lock_ctl {
 
 # define CMD_SST_BP		0x02    /* Byte Program */
 # define CMD_SST_AAI_WP		0xAD	/* Auto Address Incr Word Program */
+# define CMD_SST_ULBPR		0x98	/* Global Block Protection Unlock */
 
 int sst_write_wp(struct spi_flash *flash, u32 offset, size_t len,
 		const void *buf);
@@ -143,6 +144,8 @@ struct spi_flash_info {
 #define RD_DUAL			BIT(5)	/* use Dual Read */
 #define RD_QUADIO		BIT(6)	/* use Quad IO Read */
 #define RD_DUALIO		BIT(7)	/* use Dual IO Read */
+#define SECT_4K_ONLY	BIT(9)  /* use only CMD_ERASE_4K */
+#define SST_ULBPR		BIT(10)	/* use SST unlock block protection */
 #define RD_FULL			(RD_QUAD | RD_DUAL | RD_QUADIO | RD_DUALIO)
 };
 

@@ -142,4 +142,7 @@ struct fsl_qspi_regs {
 #define ADDR24BIT			0x18
 #define ADDR32BIT			0x20
 
+struct fsl_qspi_priv;
+int fsl_qspi_update_lut(struct fsl_qspi_priv *, u32);
+
 #endif /* _FSL_QSPI_H_ */

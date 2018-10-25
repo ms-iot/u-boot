@@ -17,6 +17,7 @@
 #include <linux/log2.h>
 #include <linux/sizes.h>
 #include <dma.h>
+#include <../drivers/spi/fsl_qspi.h>
 
 #include "sf_internal.h"
 
@@ -586,10 +587,12 @@ static int sst26_lock_ctl(struct spi_flash *flash, u32 ofs, size_t len, enum loc
 	if (ofs + len > flash->size)
 		return -EINVAL;
 
-	/* SST26 family has only 16 Mbit, 32 Mbit and 64 Mbit IC */
-	if (flash->size != SZ_2M &&
-	    flash->size != SZ_4M &&
-	    flash->size != SZ_8M)
+	/* SST26 family has only 4Mbit, 8Mbit, 16 Mbit, 32 Mbit and 64 Mbit IC */
+	if (flash->size != SZ_512K &&
+		flash->size != SZ_1M &&
+		flash->size != SZ_2M &&
+		flash->size != SZ_4M &&
+		flash->size != SZ_8M)
 		return -EINVAL;
 
 	bpr_size = 2 + (flash->size / SZ_64K / 8);
@@ -823,6 +826,7 @@ int sst_write_bp(struct spi_flash *flash, u32 offset, size_t len,
 	return ret;
 }
 #endif
+
 
 #if defined(CONFIG_SPI_FLASH_STMICRO) || defined(CONFIG_SPI_FLASH_SST)
 static void stm_get_locked_range(struct spi_flash *flash, u8 sr, loff_t *ofs,
@@ -1188,6 +1192,14 @@ int spi_flash_scan(struct spi_flash *flash)
 		flash->flash_unlock = stm_unlock;
 		flash->flash_is_locked = stm_is_locked;
 	}
+/* sst26wf series block protection implementation differs from other series */
+#if defined(CONFIG_SPI_FLASH_SST)
+	if (JEDEC_MFR(info) == SPI_FLASH_CFI_MFR_SST && info->id[1] == 0x26) {
+		flash->flash_lock = sst26_lock;
+		flash->flash_unlock = sst26_unlock;
+		flash->flash_is_locked = sst26_is_locked;
+#endif
+	}
 #endif
 
 /* sst26wf series block protection implementation differs from other series */
@@ -1217,6 +1229,12 @@ int spi_flash_scan(struct spi_flash *flash)
 	flash->page_size <<= flash->shift;
 	flash->sector_size = info->sector_size << flash->shift;
 	flash->size = flash->sector_size * info->n_sectors << flash->shift;
+
+	/* update fsl qspi driver LUT for new flash size at runtime */
+	if(strcmp(flash->dev->parent->name, "quadspi@1550000") == 0) {
+		fsl_qspi_update_lut(flash->dev->parent->priv, flash->size);
+	}
+
 #ifdef CONFIG_SF_DUAL_FLASH
 	if (flash->dual_flash & SF_DUAL_STACKED_FLASH)
 		flash->size <<= 1;
@@ -1229,7 +1247,10 @@ int spi_flash_scan(struct spi_flash *flash)
 		flash->erase_size = 4096 << flash->shift;
 	} else
 #endif
-	{
+	if (info->flags & SECT_4K_ONLY) {
+		flash->erase_cmd = CMD_ERASE_4K;
+		flash->erase_size = 4096 << flash->shift;
+	} else {
 		flash->erase_cmd = CMD_ERASE_64K;
 		flash->erase_size = flash->sector_size;
 	}

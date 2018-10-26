@@ -170,6 +170,17 @@ static void add_end_cmd(void)
 	}
 #endif
 
+	/* Add mystery end command. Fails if this does not go last */
+	*pmem_buf++ = 0x0c;
+	*pmem_buf++ = 0x40;
+	*pmem_buf++ = 0x0f;
+	*pmem_buf++ = 0x00;
+	*pmem_buf++ = 0x00;
+	*pmem_buf++ = 0x00;
+	*pmem_buf++ = 0x55;
+	*pmem_buf++ = 0x09;
+	pbl_size += 8;
+
 	/* Add PBI CRC command. */
 	*pmem_buf++ = 0x08;
 	*pmem_buf++ = pbi_crc_cmd1;

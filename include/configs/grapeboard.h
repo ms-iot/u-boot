@@ -29,11 +29,19 @@
 #define CONFIG_SPL_LIBGENERIC_SUPPORT 1
 #define CONFIG_SPL_MPC8XXX_INIT_DDR_SUPPORT 1
 #define CONFIG_SPL_BOARD_INIT 1
-#define CONFIG_RAMBOOT_PBL 1
+/* #define CONFIG_RAMBOOT_PBL 1 XXX */
 #define CONFIG_SPL_FSL_PBL 1
 #define CONFIG_SYS_FSL_PBL_RCW "board/scalys/grapeboard/rcw.cfg"
 #define CONFIG_SYS_FSL_PBL_PBI "board/scalys/grapeboard/pbi.cfg"
+
+#ifdef CONFIG_RAMBOOT_PBL
+/* Execute from OCRAM */
 #define CONFIG_SPL_TEXT_BASE CONFIG_SYS_FSL_OCRAM_BASE
+#else
+/* XIP in NOR flash */
+#define CONFIG_SPL_TEXT_BASE 0x40001000
+#endif
+
 #define CONFIG_SPL_MAX_SIZE	0x00010000
 #endif
 

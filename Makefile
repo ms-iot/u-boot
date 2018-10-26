@@ -767,11 +767,11 @@ endif
 # Always append ALL so that arch config.mk's can add custom ones
 ALL-y += u-boot.srec u-boot.bin u-boot.sym System.map binary_size_check
 
-ifeq ($(CONFIG_SPL),y)
-ALL-$(CONFIG_CONCAT_PBL_UBOOT_IMAGE) += u-boot-spl-with-pbl.bin
-else
+#ifeq ($(CONFIG_SPL),y)
+#ALL-$(CONFIG_CONCAT_PBL_UBOOT_IMAGE) += u-boot-spl-with-pbl.bin
+#else
 ALL-$(CONFIG_CONCAT_PBL_UBOOT_IMAGE) += u-boot-with-pbl.bin
-endif
+#endif
 
 ALL-$(CONFIG_ONENAND_U_BOOT) += u-boot-onenand.bin
 ifeq ($(CONFIG_SPL_FSL_PBL),y)

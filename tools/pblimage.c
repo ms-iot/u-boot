@@ -153,7 +153,7 @@ static uint32_t reverse_byte(uint32_t val)
 }
 
 /* write end command and crc command to memory. */
-static void add_end_cmd(void)
+static void add_end_cmd(uint32_t load_addr)
 {
 	uint32_t crc32_pbl;
 #if 0
@@ -169,6 +169,17 @@ static void add_end_cmd(void)
 		pbl_size++;
 	}
 #endif
+
+	/* write load address SCRATCHRW1 */
+	*pmem_buf++ = load_addr & 0xff;
+	*pmem_buf++ = (load_addr >> 8) & 0xff;
+	*pmem_buf++ = (load_addr >> 16) & 0xff;
+	*pmem_buf++ = (load_addr >> 24) & 0xff;
+	*pmem_buf++ = 0x04;
+	*pmem_buf++ = 0x06;
+	*pmem_buf++ = 0x57;
+	*pmem_buf++ = 0x09;
+	pbl_size += 8;
 
 	/* Add mystery end command. Fails if this does not go last */
 	*pmem_buf++ = 0x0c;
@@ -219,7 +230,7 @@ void pbl_load_uboot(int ifd, struct image_tool_params *params)
 		load_uboot(fp_uboot);
 		fclose(fp_uboot);
 	}
-	add_end_cmd();
+	add_end_cmd(params->addr);
 	lseek(ifd, 0, SEEK_SET);
 
 	size = pbl_size;

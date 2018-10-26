@@ -86,8 +86,9 @@ int pfe_eth_board_init(struct udevice *dev)
 	miiphy_write(DEFAULT_PFE_MDIO_NAME,CONFIG_PFE_EMAC2_PHY_ADDR,0x18,0x00B5);
 
 	/* Enable PHY Power save mode */
-	miiphy_write(DEFAULT_PFE_MDIO_NAME,CONFIG_PFE_EMAC1_PHY_ADDR,0x10,0x0200);
-	miiphy_write(DEFAULT_PFE_MDIO_NAME,CONFIG_PFE_EMAC2_PHY_ADDR,0x10,0x0200);
+	/* Todo: Does not work with updated PFE driver */
+	/*miiphy_write(DEFAULT_PFE_MDIO_NAME,CONFIG_PFE_EMAC1_PHY_ADDR,0x10,0x0200);
+	miiphy_write(DEFAULT_PFE_MDIO_NAME,CONFIG_PFE_EMAC2_PHY_ADDR,0x10,0x0200);*/
         
 	return 0;
 }

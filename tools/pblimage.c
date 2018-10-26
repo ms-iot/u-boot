@@ -156,9 +156,9 @@ static uint32_t reverse_byte(uint32_t val)
 static void add_end_cmd(void)
 {
 	uint32_t crc32_pbl;
+#if 0
 	int i;
 	unsigned char *p = (unsigned char *)&pbl_end_cmd;
-
 	if (ENDIANNESS == 'l') {
 		for (i = 0; i < 4; i++)
 			pbl_end_cmd[i] = reverse_byte(pbl_end_cmd[i]);
@@ -168,6 +168,7 @@ static void add_end_cmd(void)
 		*pmem_buf++ = *p++;
 		pbl_size++;
 	}
+#endif
 
 	/* Add PBI CRC command. */
 	*pmem_buf++ = 0x08;

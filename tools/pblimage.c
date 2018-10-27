@@ -44,7 +44,17 @@ static union
  * start offset by subtracting the size of the u-boot image from the
  * top of the allowable 24-bit range.
  */
-static void swap_quads(uint8_t *buf, size_t len)
+
+static void swap_byte(uint8_t *a, uint8_t *b)
+{
+	uint8_t t = *a;
+	*a = *b;
+	*b = t;
+}
+
+/* swap words within dwords, and bytes within words.
+   This equates to reversing all bytes per 8-byte chunk */
+static void all_the_swaps(uint8_t *buf, size_t len)
 {
 	int i;
 
@@ -53,11 +63,11 @@ static void swap_quads(uint8_t *buf, size_t len)
 		exit(EXIT_FAILURE);
 	}
 
-	for (i = 0; i < (len / 8); i++) {
-		uint8_t temp[4];
-		memcpy(temp, &buf[i * 8 + 4], 4);
-		memcpy(&buf[i * 8 + 4], &buf[i * 8], 4);
-		memcpy(&buf[i * 8], temp, 4);
+	for (i = 0; i < len; i += 8) {
+		swap_byte(&buf[i], &buf[i + 7]);
+		swap_byte(&buf[i + 1], &buf[i + 6]);
+		swap_byte(&buf[i + 2], &buf[i + 5]);
+		swap_byte(&buf[i + 3], &buf[i + 4]);
 	}
 }
 
@@ -120,17 +130,17 @@ static void load_uboot(FILE *fp_uboot, uint64_t load_addr)
 		memcpy(&buf[72], &binary[i * 128 + 64], 64);
 
 		// write commands into buffer
-		buf[0] = offset_low & 0xff;
-		buf[1] = (offset_low >> 8) & 0xff;
-		buf[2] = (offset_low >> 16) & 0xff;
-		buf[3] = 0x81;	// ALT, SIZE=64, CONT
+		buf[3] = offset_low & 0xff;
+		buf[2] = (offset_low >> 8) & 0xff;
+		buf[1] = (offset_low >> 16) & 0xff;
+		buf[0] = 0x81;	// ALT, SIZE=64, CONT
 
-		buf[68 + 0] = (offset_low + 64) & 0xff;
-		buf[68 + 1] = ((offset_low + 64) >> 8) & 0xff;
-		buf[68 + 2] = ((offset_low + 64) >> 16) & 0xff;
-		buf[68 + 3] = 0x81;	// ALT, SIZE=64, CONT
+		buf[68 + 3] = (offset_low + 64) & 0xff;
+		buf[68 + 2] = ((offset_low + 64) >> 8) & 0xff;
+		buf[68 + 1] = ((offset_low + 64) >> 16) & 0xff;
+		buf[68 + 0] = 0x81;	// ALT, SIZE=64, CONT
 
-		swap_quads(buf, sizeof(buf));
+		all_the_swaps(buf, sizeof(buf));
 
 		// append to pmem_buf
 		memcpy(pmem_buf, buf, sizeof(buf));

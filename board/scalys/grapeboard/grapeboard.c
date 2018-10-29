@@ -6,6 +6,7 @@
  */
 
 #include <common.h>
+#include <spl.h>
 #include <i2c.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
@@ -201,3 +202,12 @@ int ft_board_setup(void *blob, bd_t *bd)
 void scsi_init(void) {
 	printf("\r"); /* SCSI init already completed in board_late_init, so skip message */
 }
+
+#ifdef CONFIG_SPL_BUILD
+void board_boot_order(u32 *spl_boot_list)
+{
+#if CONFIG_IS_ENABLED(RAM_SUPPORT)
+	spl_boot_list[0] = BOOT_DEVICE_RAM;
+#endif
+}
+#endif

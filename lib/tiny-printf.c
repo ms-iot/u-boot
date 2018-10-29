@@ -236,6 +236,9 @@ static int _vprintf(struct printf_info *info, const char *fmt, va_list va)
 			if (ch == 'l') {
 				ch = *(fmt++);
 				islong = true;
+				// handle 'long long' case
+				if (ch == 'l')
+					ch = *(fmt++);
 			}
 
 			info->bf = buf;

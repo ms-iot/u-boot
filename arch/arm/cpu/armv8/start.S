@@ -182,7 +182,6 @@ WEAK(apply_core_errata)
 	ret
 
 apply_a53_core_errata:
-
 #ifdef CONFIG_ARM_ERRATA_855873
 	mrs	x0, midr_el1
 	tst	x0, #(0xf << 20)
@@ -194,9 +193,16 @@ apply_a53_core_errata:
 	b.lt	0b
 
 	mrs	x0, S3_1_c15_c2_0	/* cpuactlr_el1 */
+
+	/* Do not write cpuactlr_el1 if already set; we might be at the wrong
+	   exception level */
+	tst	x0, #1 << 44
+	b.ne	1f
+
 	/* Enable data cache clean as data cache clean/invalidate */
 	orr	x0, x0, #1 << 44
 	msr	S3_1_c15_c2_0, x0	/* cpuactlr_el1 */
+1:
 #endif
 	b 0b
 

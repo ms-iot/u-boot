@@ -114,8 +114,9 @@ int dram_init(void)
 		0x0000022a,	/* mpodtctrl */
 		0xa1390003,	/* mpzqhwctrl */
 	};
-
+#if !defined(CONFIG_SPL) || defined(CONFIG_SPL_BUILD)
 	mmdc_init(&mparam);
+#endif
 
 	gd->ram_size = CONFIG_SYS_SDRAM_SIZE;
 #if !defined(CONFIG_SPL) || defined(CONFIG_SPL_BUILD)

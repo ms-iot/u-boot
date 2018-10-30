@@ -6,14 +6,13 @@
  */
 
 #include <common.h>
+#include <fdt_support.h>
 #include <spl.h>
 #include <i2c.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/fsl_serdes.h>
-#ifdef CONFIG_FSL_LS_PPA
 #include <asm/arch/ppa.h>
-#endif
 #include <asm/arch/mmu.h>
 #include <asm/arch/soc.h>
 #include <hwconfig.h>

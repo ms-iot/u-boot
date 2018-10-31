@@ -349,12 +349,7 @@ unsigned int sec_firmware_support_psci_version(void)
  */
 bool sec_firmware_support_hwrng(void)
 {
-	uint8_t rand[8];
-	if (sec_firmware_addr & SEC_FIRMWARE_RUNNING) {
-			return true;
-	}
-
-	return false;
+	return current_el() < 3;
 }
 
 /*
@@ -459,10 +454,10 @@ int fdt_fixup_kaslr(void *fdt)
 
 #if defined(CONFIG_ARMV8_SEC_FIRMWARE_SUPPORT)
 	/* Check if random seed generation is  supported */
-	//if (sec_firmware_support_hwrng() == false) {
-	//	printf("WARNING: SEC firmware not running, no kaslr-seed\n");
-	//	return 0;
-	//}
+	if (sec_firmware_support_hwrng() == false) {
+		printf("WARNING: SEC firmware not running, no kaslr-seed\n");
+		return 0;
+	}
 
 	ret = sec_firmware_get_random(rand, 8);
 	if (ret < 0) {

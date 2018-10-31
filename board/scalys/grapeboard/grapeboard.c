@@ -143,7 +143,8 @@ int board_init(void)
 	 * Set CCI-400 control override register to enable barrier
 	 * transaction
 	 */
-	out_le32(&cci->ctrl_ord, CCI400_CTRLORD_EN_BARRIER);
+	if (current_el() == 3)
+		out_le32(&cci->ctrl_ord, CCI400_CTRLORD_EN_BARRIER);
 
 #ifdef CONFIG_SYS_FSL_ERRATUM_A010315
 	erratum_a010315();

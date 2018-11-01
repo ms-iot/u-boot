@@ -23,7 +23,7 @@ u32 spl_boot_device(void)
 #ifdef CONFIG_SPL_NAND_SUPPORT
 	return BOOT_DEVICE_NAND;
 #endif
-	return 0;
+	return BOOT_DEVICE_NONE;
 }
 
 u32 spl_boot_mode(const u32 boot_device)

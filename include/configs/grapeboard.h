@@ -21,7 +21,25 @@
 #define CONFIG_DISPLAY_BOARDINFO_LATE
 #define CONFIG_MISC_INIT_R
 
+#ifdef CONFIG_SPL
+#define CONFIG_SPL_FRAMEWORK
+#define CONFIG_SYS_FSL_PBL_RCW "board/scalys/grapeboard/rcw.cfg"
+#define CONFIG_SYS_FSL_PBL_PBI "board/scalys/grapeboard/pbi.cfg"
+
+/* Execute from OCRAM */
+#define CONFIG_SYS_TEXT_BASE 0x82000000
+#define CONFIG_SPL_TEXT_BASE CONFIG_SYS_FSL_OCRAM_BASE
+#define CONFIG_SPL_MAX_SIZE 0x00010000
+#define CONFIG_SPL_STACK \
+	(CONFIG_SYS_FSL_OCRAM_BASE + CONFIG_SYS_FSL_OCRAM_SIZE)
+
+#define CONFIG_RAMBOOT_PBL 1
+#define CONFIG_SPL_FSL_PBL 1
+#define CONFIG_SPL_PAD_TO 0x00040000
+#define CONFIG_SPL_LOAD_FIT_ADDRESS (0x40000000 + CONFIG_SPL_PAD_TO)
+#else /* SPL */
 #define CONFIG_SYS_TEXT_BASE 				0x40001000 /* QSPI0_AMBA_BASE + CONFIG_UBOOT_TEXT_OFFSET */
+#endif /* SPL */
 
 #define CONFIG_SYS_CLK_FREQ					125000000	/* 125MHz */
 
@@ -314,6 +332,7 @@
             "sf write $load_addr pfe $filesize;" \
         "fi\0" \
 
+#ifndef CONFIG_SPL_BUILD
 #define CONFIG_EXTRA_ENV_SETTINGS		\
 	"verify=no\0"				\
 	"fdt_high=0xffffffffffffffff\0"		\
@@ -359,6 +378,8 @@
 							 "setenv bootargs $bootargs $default_bootargs;" \
 							 "bootm $kernel_addr_r - $fdt_addr_r;" \
 			  "fi\0" \
+
+#endif
 
 #undef CONFIG_BOOTCOMMAND
 #define CONFIG_BOOTCOMMAND 	"run distro_bootcmd; run default_boot"

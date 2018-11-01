@@ -1202,7 +1202,7 @@ spl/u-boot-spl.pbl: spl/u-boot-spl.bin FORCE
 	$(call if_changed,mkimage)
 
 ifeq ($(ARCH),arm)
-UBOOT_BINLOAD := u-boot.img
+UBOOT_BINLOAD := u-boot-dtb.img
 else
 UBOOT_BINLOAD := u-boot.bin
 endif

@@ -14,8 +14,10 @@
 
 MEMORY { .sram : ORIGIN = CONFIG_SPL_TEXT_BASE,
 		LENGTH = CONFIG_SPL_MAX_SIZE }
+/* XXX put BSS in sram
 MEMORY { .sdram : ORIGIN = CONFIG_SPL_BSS_START_ADDR,
 		LENGTH = CONFIG_SPL_BSS_MAX_SIZE }
+*/
 
 OUTPUT_FORMAT("elf64-littleaarch64", "elf64-littleaarch64", "elf64-littleaarch64")
 OUTPUT_ARCH(aarch64)
@@ -59,16 +61,16 @@ SECTIONS
 	.bss_start (NOLOAD) : {
 		. = ALIGN(8);
 		KEEP(*(.__bss_start));
-	} >.sdram
+	} >.sram
 
 	.bss (NOLOAD) : {
 		*(.bss*)
 		 . = ALIGN(8);
-	} >.sdram
+	} >.sram
 
 	.bss_end (NOLOAD) : {
 		KEEP(*(.__bss_end));
-	} >.sdram
+	} >.sram
 
 	/DISCARD/ : { *(.dynsym) }
 	/DISCARD/ : { *(.dynstr*) }

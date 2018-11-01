@@ -21,7 +21,6 @@
 #include <spi.h>
 #include <dm/device-internal.h>
 
-#include <../../../include/generated/autoconf.h>
 #include "board_configuration_data.h"
 #include "gpio_grapeboard.h"
 

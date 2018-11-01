@@ -349,12 +349,7 @@ unsigned int sec_firmware_support_psci_version(void)
  */
 bool sec_firmware_support_hwrng(void)
 {
-	uint8_t rand[8];
-	if (sec_firmware_addr & SEC_FIRMWARE_RUNNING) {
-			return true;
-	}
-
-	return false;
+	return current_el() < 3;
 }
 
 /*

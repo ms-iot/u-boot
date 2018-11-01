@@ -6,13 +6,13 @@
  */
 
 #include <common.h>
+#include <fdt_support.h>
+#include <spl.h>
 #include <i2c.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/fsl_serdes.h>
-#ifdef CONFIG_FSL_LS_PPA
 #include <asm/arch/ppa.h>
-#endif
 #include <asm/arch/mmu.h>
 #include <asm/arch/soc.h>
 #include <hwconfig.h>
@@ -26,7 +26,6 @@
 #include <fsl_sec.h>
 #include <fsl_csu.h>
 #include "usb_grapeboard.h"
-#include <../../../include/generated/autoconf.h>
 #include <usb.h>
 #include "gpio_grapeboard.h"
 #include "board_configuration_data.h"
@@ -114,8 +113,9 @@ int dram_init(void)
 		0x0000022a,	/* mpodtctrl */
 		0xa1390003,	/* mpzqhwctrl */
 	};
-
+#if !defined(CONFIG_SPL) || defined(CONFIG_SPL_BUILD)
 	mmdc_init(&mparam);
+#endif
 
 	gd->ram_size = CONFIG_SYS_SDRAM_SIZE;
 #if !defined(CONFIG_SPL) || defined(CONFIG_SPL_BUILD)
@@ -143,7 +143,8 @@ int board_init(void)
 	 * Set CCI-400 control override register to enable barrier
 	 * transaction
 	 */
-	out_le32(&cci->ctrl_ord, CCI400_CTRLORD_EN_BARRIER);
+	if (current_el() == 3)
+		out_le32(&cci->ctrl_ord, CCI400_CTRLORD_EN_BARRIER);
 
 #ifdef CONFIG_SYS_FSL_ERRATUM_A010315
 	erratum_a010315();
@@ -202,3 +203,12 @@ int ft_board_setup(void *blob, bd_t *bd)
 void scsi_init(void) {
 	printf("\r"); /* SCSI init already completed in board_late_init, so skip message */
 }
+
+#ifdef CONFIG_SPL_BUILD
+void board_boot_order(u32 *spl_boot_list)
+{
+#if CONFIG_IS_ENABLED(RAM_SUPPORT)
+	spl_boot_list[0] = BOOT_DEVICE_RAM;
+#endif
+}
+#endif

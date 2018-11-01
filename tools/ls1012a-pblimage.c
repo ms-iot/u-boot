@@ -8,11 +8,6 @@
 #include "pblimage.h"
 #include "pbl_crc32.h"
 
-static size_t round_up(size_t x, size_t align)
-{
-	return ((x + (align - 1)) / align) * align;
-}
-
 /*
  * need to store all bytes in memory for calculating crc32, then write the
  * bytes to image file for PBL boot.
@@ -22,6 +17,11 @@ static unsigned char *pmem_buf = mem_buf;
 static int pbl_size;
 static char *fname = "Unknown";
 static int lineno = -1;
+
+static size_t round_up(size_t x, size_t align)
+{
+	return ((x + (align - 1)) / align) * align;
+}
 
 /*
  * The PBL can load up to 64 bytes at a time, so we split the U-Boot
@@ -166,6 +166,7 @@ static void check_get_hexval(char *token)
 		       lineno, token);
 		exit(EXIT_FAILURE);
 	}
+	printf("%08x\n", bswap_32(hexval));
 	for (i = 3; i >= 0; i--) {
 		*pmem_buf++ = (hexval >> (i * 8)) & 0xff;
 		pbl_size++;
@@ -212,31 +213,56 @@ static void pbl_parser(char *name)
 	fclose(fd);
 }
 
+static void parse_rcw(char *name)
+{
+	pbl_parser(name);
+
+	if (pbl_size != (8 + 64)) {
+		printf("Error:%s RCW must be exactly 64 bytes\n", fname);
+		exit(EXIT_FAILURE);
+	}
+}
+
+static void add_preamble(void)
+{
+	*pmem_buf++ = 0xaa;
+	*pmem_buf++ = 0x55;
+	*pmem_buf++ = 0xaa;
+	*pmem_buf++ = 0x55;
+
+	*pmem_buf++ = 0x01;
+	*pmem_buf++ = 0xee;
+	*pmem_buf++ = 0x01;
+	*pmem_buf++ = 0x00;
+
+	pbl_size += 8;
+}
+
 /* write end command and crc command to memory. */
 static void add_end_cmd(uint32_t load_addr)
 {
 	uint32_t crc32_pbl;
 
 	/* write load address SCRATCHRW1 */
-	*pmem_buf++ = load_addr & 0xff;
-	*pmem_buf++ = (load_addr >> 8) & 0xff;
-	*pmem_buf++ = (load_addr >> 16) & 0xff;
-	*pmem_buf++ = (load_addr >> 24) & 0xff;
-	*pmem_buf++ = 0x04;
-	*pmem_buf++ = 0x06;
-	*pmem_buf++ = 0x57;
 	*pmem_buf++ = 0x09;
+	*pmem_buf++ = 0x57;
+	*pmem_buf++ = 0x06;
+	*pmem_buf++ = 0x04;
+	*pmem_buf++ = (load_addr >> 24) & 0xff;
+	*pmem_buf++ = (load_addr >> 16) & 0xff;
+	*pmem_buf++ = (load_addr >> 8) & 0xff;
+	*pmem_buf++ = load_addr & 0xff;
 	pbl_size += 8;
 
 	/* Add mystery end command. Fails if this does not go last */
-	*pmem_buf++ = 0x0c;
-	*pmem_buf++ = 0x40;
-	*pmem_buf++ = 0x0f;
-	*pmem_buf++ = 0x00;
-	*pmem_buf++ = 0x00;
-	*pmem_buf++ = 0x00;
-	*pmem_buf++ = 0x55;
 	*pmem_buf++ = 0x09;
+	*pmem_buf++ = 0x55;
+	*pmem_buf++ = 0x00;
+	*pmem_buf++ = 0x00;
+	*pmem_buf++ = 0x00;
+	*pmem_buf++ = 0x0f;
+	*pmem_buf++ = 0x40;
+	*pmem_buf++ = 0x0c;
 	pbl_size += 8;
 
 	/* Add PBI CRC command. */
@@ -260,13 +286,17 @@ void ls1012a_pbl_load_uboot(int ifd, struct image_tool_params *params)
 	FILE *fp_uboot;
 	int size;
 
-	/* parse the rcw.cfg file. */
-	pbl_parser(params->imagename);
+	add_preamble();
+
+	/* parse the rcw.cfg file */
+	parse_rcw(params->imagename);
 
 	/* parse the pbi.cfg file. */
+	printf("parsing PBI\n");
 	if (params->imagename2[0] != '\0')
 		pbl_parser(params->imagename2);
 
+	printf("done\n");
 	if (params->datafile) {
 		fp_uboot = fopen(params->datafile, "r");
 		if (!fp_uboot) {
@@ -279,6 +309,9 @@ void ls1012a_pbl_load_uboot(int ifd, struct image_tool_params *params)
 	}
 	add_end_cmd(params->addr);
 	lseek(ifd, 0, SEEK_SET);
+
+	/* swap all but the CRC command */
+	all_the_swaps(mem_buf, pbl_size - 8);
 
 	size = pbl_size;
 	if (write(ifd, (const void *)&mem_buf, size) != size) {

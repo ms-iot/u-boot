@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2012 Freescale Semiconductor, Inc.
  *
  * Cleaned up and refactored by Charles Manning.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include "pblimage.h"
 
@@ -42,32 +41,15 @@ static void make_crc_table(void)
 uint32_t pbl_crc32(uint32_t in_crc, const char *buf, uint32_t len)
 {
 	uint32_t crc32_val;
-	int i, j;
-	uint8_t temp[8];
+	int i;
 
 	make_crc_table();
 
 	crc32_val = ~in_crc;
 
-	for (j = 0; j < (len / 8); j++) {
-		// byte-reverse 8-byte chunk of input into temporary buffer
-		for (i = 0; i < 8; i++)
-			temp[i] = buf[(j * 8) + (7 - i)];
-
-		for (i = 0; i < 8; i++) {
-			//printf("%02x\n", (uint32_t)(temp[i] & 0xff));
-			crc32_val = (crc32_val << 8) ^
-				crc_table[(crc32_val >> 24) ^ (temp[i] & 0xff)];
-		}
-	}
-
-	// remaining bytes don't get swapped for whatever reason
-	for (i = 0; i < (len % 8); i++) {
-		uint8_t ch = buf[((len / 8) * 8) + i];
-		//printf("%02x\n", (uint32_t)(ch & 0xff));
+	for (i = 0; i < len; i++)
 		crc32_val = (crc32_val << 8) ^
-			crc_table[(crc32_val >> 24) ^ (ch & 0xff)];
-	}
+			crc_table[(crc32_val >> 24) ^ (*buf++ & 0xff)];
 
 	return crc32_val;
 }

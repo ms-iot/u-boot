@@ -13,6 +13,10 @@
 #define PBL_ADDR_24BIT_MASK	0x00ffffff
 
 /*
+ * Initialize to an invalid value.
+ */
+static uint32_t next_pbl_cmd = 0x82000000;
+/*
  * need to store all bytes in memory for calculating crc32, then write the
  * bytes to image file for PBL boot.
  */
@@ -25,6 +29,7 @@ static struct pbl_header pblimage_header;
 static int uboot_size;
 static int arch_flag;
 
+static uint32_t pbl_cmd_initaddr;
 static uint32_t pbi_crc_cmd1;
 static uint32_t pbi_crc_cmd2;
 static uint32_t pbl_end_cmd[4];
@@ -44,115 +49,43 @@ static union
  * start offset by subtracting the size of the u-boot image from the
  * top of the allowable 24-bit range.
  */
-
-static void swap_byte(uint8_t *a, uint8_t *b)
+static void generate_pbl_cmd(void)
 {
-	uint8_t t = *a;
-	*a = *b;
-	*b = t;
-}
-
-/*
- * Swap words within dwords, and bytes within words.
- * This equates to reversing all bytes per 8-byte chunk
- */
-static void all_the_swaps(uint8_t *buf, size_t len)
-{
+	uint32_t val = next_pbl_cmd;
+	next_pbl_cmd += 0x40;
 	int i;
 
-	if ((len % 8) != 0) {
-		printf("Error: buffer must be multiple of 8-bytes long\n");
-		exit(EXIT_FAILURE);
-	}
-
-	for (i = 0; i < len; i += 8) {
-		swap_byte(&buf[i], &buf[i + 7]);
-		swap_byte(&buf[i + 1], &buf[i + 6]);
-		swap_byte(&buf[i + 2], &buf[i + 5]);
-		swap_byte(&buf[i + 3], &buf[i + 4]);
+	for (i = 3; i >= 0; i--) {
+		*pmem_buf++ = (val >> (i * 8)) & 0xff;
+		pbl_size++;
 	}
 }
 
-static void write_altcbar(uint64_t addr)
+static void pbl_fget(size_t size, FILE *stream)
 {
-	*pmem_buf++ = 0;
-	*pmem_buf++ = (addr >> 24) & 0xff;
-	*pmem_buf++ = (addr >> 32) & 0xff;
-	*pmem_buf++ = (addr >> 40) & 0xff;
+	unsigned char c = 0xff;
+	int c_temp;
 
-	*pmem_buf++ = 0x58;
-	*pmem_buf++ = 0x01;
-	*pmem_buf++ = 0x57;
-	*pmem_buf++ = 0x09;
-
-	pbl_size += 8;
+	while (size) {
+		c_temp = fgetc(stream);
+		if (c_temp != EOF)
+			c = (unsigned char)c_temp;
+		else if ((c_temp == EOF) && (arch_flag == IH_ARCH_ARM))
+			c = 0xff;
+		*pmem_buf++ = c;
+		pbl_size++;
+		size--;
+	}
 }
 
 /* load split u-boot with PBI command 81xxxxxx. */
-static void load_uboot(FILE *fp_uboot, uint64_t load_addr)
+static void load_uboot(FILE *fp_uboot)
 {
-	int i;
-	uint64_t offset;
-	uint64_t prev_offset_high;
-	uint32_t offset_low;
-	uint8_t *binary;
-	size_t padded_len;
-
-	// make sure we're starting on an 8-byte boundary
-	if ((pbl_size % 8) != 0) {
-		printf("Error: invalid alignment in PBL (pbl_size=0x%x)\n",
-		       pbl_size);
-		exit(EXIT_FAILURE);
+	next_pbl_cmd = pbl_cmd_initaddr - uboot_size;
+	while (next_pbl_cmd < pbl_cmd_initaddr) {
+		generate_pbl_cmd();
+		pbl_fget(64, fp_uboot);
 	}
-
-	// pad input binary to 128 bytes to make life easy
-	padded_len = roundup(uboot_size, 128);
-	binary = (uint8_t *)malloc(padded_len);
-	if (fread(binary, 1, uboot_size, fp_uboot) != uboot_size) {
-		printf("Error: failed to read uboot from file\n");
-		exit(EXIT_FAILURE);
-	}
-	memset(binary + uboot_size, 0xff, padded_len - uboot_size);
-
-	prev_offset_high = 0xffULL << 40;
-
-	// process file in 128-byte chunks
-	offset = load_addr;
-	for (i = 0; i < (padded_len / 128); i++) {
-		uint8_t buf[128 + 4 + 4];
-
-		offset_low = (uint32_t)(offset & 0x00ffffff);
-		if ((offset & 0x0000ffffff000000ULL) != prev_offset_high) {
-			write_altcbar(offset);
-			prev_offset_high = offset & 0x0000ffffff000000ULL;
-		}
-
-		// copy data to intermediate buffer
-		memcpy(&buf[4], &binary[i * 128], 64);
-		memcpy(&buf[72], &binary[i * 128 + 64], 64);
-
-		// write commands into buffer
-		buf[3] = offset_low & 0xff;
-		buf[2] = (offset_low >> 8) & 0xff;
-		buf[1] = (offset_low >> 16) & 0xff;
-		buf[0] = 0x81;	// ALT, SIZE=64, CONT
-
-		buf[68 + 3] = (offset_low + 64) & 0xff;
-		buf[68 + 2] = ((offset_low + 64) >> 8) & 0xff;
-		buf[68 + 1] = ((offset_low + 64) >> 16) & 0xff;
-		buf[68 + 0] = 0x81;	// ALT, SIZE=64, CONT
-
-		all_the_swaps(buf, sizeof(buf));
-
-		// append to pmem_buf
-		memcpy(pmem_buf, buf, sizeof(buf));
-		pmem_buf += sizeof(buf);
-		pbl_size += sizeof(buf);
-
-		offset += 128;
-	}
-
-	free(binary);
 }
 
 static void check_get_hexval(char *token)
@@ -220,31 +153,21 @@ static uint32_t reverse_byte(uint32_t val)
 }
 
 /* write end command and crc command to memory. */
-static void add_end_cmd(uint32_t load_addr)
+static void add_end_cmd(void)
 {
 	uint32_t crc32_pbl;
+	int i;
+	unsigned char *p = (unsigned char *)&pbl_end_cmd;
 
-	/* write load address SCRATCHRW1 */
-	*pmem_buf++ = load_addr & 0xff;
-	*pmem_buf++ = (load_addr >> 8) & 0xff;
-	*pmem_buf++ = (load_addr >> 16) & 0xff;
-	*pmem_buf++ = (load_addr >> 24) & 0xff;
-	*pmem_buf++ = 0x04;
-	*pmem_buf++ = 0x06;
-	*pmem_buf++ = 0x57;
-	*pmem_buf++ = 0x09;
-	pbl_size += 8;
+	if (ENDIANNESS == 'l') {
+		for (i = 0; i < 4; i++)
+			pbl_end_cmd[i] = reverse_byte(pbl_end_cmd[i]);
+	}
 
-	/* Add mystery end command. Fails if this does not go last */
-	*pmem_buf++ = 0x0c;
-	*pmem_buf++ = 0x40;
-	*pmem_buf++ = 0x0f;
-	*pmem_buf++ = 0x00;
-	*pmem_buf++ = 0x00;
-	*pmem_buf++ = 0x00;
-	*pmem_buf++ = 0x55;
-	*pmem_buf++ = 0x09;
-	pbl_size += 8;
+	for (i = 0; i < 16; i++) {
+		*pmem_buf++ = *p++;
+		pbl_size++;
+	}
 
 	/* Add PBI CRC command. */
 	*pmem_buf++ = 0x08;
@@ -281,10 +204,10 @@ void pbl_load_uboot(int ifd, struct image_tool_params *params)
 			exit(EXIT_FAILURE);
 		}
 
-		load_uboot(fp_uboot, params->addr);
+		load_uboot(fp_uboot);
 		fclose(fp_uboot);
 	}
-	add_end_cmd(params->addr);
+	add_end_cmd();
 	lseek(ifd, 0, SEEK_SET);
 
 	size = pbl_size;
@@ -359,7 +282,8 @@ int pblimage_check_params(struct image_tool_params *params)
 			exit(EXIT_FAILURE);
 		}
 
-		uboot_size = st.st_size;
+		/* For the variable size, pad it to 64 byte boundary */
+		uboot_size = roundup(st.st_size, 64);
 		fclose(fp_uboot);
 	}
 
@@ -367,6 +291,9 @@ int pblimage_check_params(struct image_tool_params *params)
 		arch_flag = IH_ARCH_ARM;
 		pbi_crc_cmd1 = 0x61;
 		pbi_crc_cmd2 = 0;
+		pbl_cmd_initaddr = params->addr & PBL_ADDR_24BIT_MASK;
+		pbl_cmd_initaddr |= PBL_ACS_CONT_CMD;
+		pbl_cmd_initaddr |= uboot_size;
 		pbl_end_cmd[0] = 0x09610000;
 		pbl_end_cmd[1] = 0x00000000;
 		pbl_end_cmd[2] = 0x096100c0;
@@ -375,12 +302,14 @@ int pblimage_check_params(struct image_tool_params *params)
 		arch_flag = IH_ARCH_PPC;
 		pbi_crc_cmd1 = 0x13;
 		pbi_crc_cmd2 = 0x80;
+		pbl_cmd_initaddr = 0x82000000;
 		pbl_end_cmd[0] = 0x091380c0;
 		pbl_end_cmd[1] = 0x00000000;
 		pbl_end_cmd[2] = 0x091380c0;
 		pbl_end_cmd[3] = 0x00000000;
 	}
 
+	next_pbl_cmd = pbl_cmd_initaddr;
 	return 0;
 };
 

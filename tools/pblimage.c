@@ -292,7 +292,7 @@ void pbl_load_uboot(int ifd, struct image_tool_params *params)
 			exit(EXIT_FAILURE);
 		}
 
-		load_uboot(fp_uboot, 0x10000000 /* params->addr XXX */);
+		load_uboot(fp_uboot, params->addr);
 		fclose(fp_uboot);
 	}
 	add_end_cmd(params->addr);

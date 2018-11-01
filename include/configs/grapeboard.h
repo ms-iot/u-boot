@@ -31,10 +31,10 @@
 #define CONFIG_SPL_BOARD_INIT 1
 #define CONFIG_RAMBOOT_PBL 1
 #define CONFIG_SPL_FSL_PBL 1
+#define CONFIG_RAMBOOT_PBL 1
 #define CONFIG_SYS_FSL_PBL_RCW "board/scalys/grapeboard/rcw.cfg"
 #define CONFIG_SYS_FSL_PBL_PBI "board/scalys/grapeboard/pbi.cfg"
 
-#ifdef CONFIG_RAMBOOT_PBL
 /* Execute from OCRAM */
 #define CONFIG_SPL_TEXT_BASE CONFIG_SYS_FSL_OCRAM_BASE
 #define CONFIG_SYS_TEXT_BASE 0x82000000
@@ -49,10 +49,6 @@
 #define CONFIG_SPL_LOAD_FIT_ADDRESS (0x40000000 + CONFIG_SPL_PAD_TO)
 #define CONFIG_SPL_RAM_DEVICE 1
 #endif /* RAM_SUPPORT */
-#else /* RAMBOOT_PBL */
-/* XIP in NOR flash */
-#define CONFIG_SPL_TEXT_BASE 0x40001000
-#endif /* RAMBOOT_PBL */
 
 #else /* SPL */
 #define CONFIG_SYS_TEXT_BASE 				0x40001000 /* QSPI0_AMBA_BASE + CONFIG_UBOOT_TEXT_OFFSET */

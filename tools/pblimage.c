@@ -250,13 +250,6 @@ static void add_end_cmd(void)
 	pbl_size += 4;
 }
 
-// XXX
-void ls1012a_pbl_load_uboot(int ifd, struct image_tool_params *params)
-{
-	printf("hello from ls1012a load image\n");
-	return;
-}
-
 void pbl_load_uboot(int ifd, struct image_tool_params *params)
 {
 	FILE *fp_uboot;
@@ -334,13 +327,6 @@ static void pblimage_set_header(void *ptr, struct stat *sbuf, int ifd,
 				struct image_tool_params *params)
 {
 	/*nothing need to do, pbl_load_uboot takes care of whole file. */
-}
-
-// XXX
-int ls1012a_pblimage_check_params(struct image_tool_params *params)
-{
-	printf("hello from ls1012a check params\n");
-	return 0;
 }
 
 int pblimage_check_params(struct image_tool_params *params)

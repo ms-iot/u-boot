@@ -52,8 +52,10 @@ static void swap_byte(uint8_t *a, uint8_t *b)
 	*b = t;
 }
 
-/* swap words within dwords, and bytes within words.
-   This equates to reversing all bytes per 8-byte chunk */
+/*
+ * Swap words within dwords, and bytes within words.
+ * This equates to reversing all bytes per 8-byte chunk
+ */
 static void all_the_swaps(uint8_t *buf, size_t len)
 {
 	int i;
@@ -99,7 +101,7 @@ static void load_uboot(FILE *fp_uboot, uint64_t load_addr)
 	// make sure we're starting on an 8-byte boundary
 	if ((pbl_size % 8) != 0) {
 		printf("Error: invalid alignment in PBL (pbl_size=0x%x)\n",
-			pbl_size);
+		       pbl_size);
 		exit(EXIT_FAILURE);
 	}
 
@@ -221,19 +223,6 @@ static uint32_t reverse_byte(uint32_t val)
 static void add_end_cmd(uint32_t load_addr)
 {
 	uint32_t crc32_pbl;
-#if 0
-	int i;
-	unsigned char *p = (unsigned char *)&pbl_end_cmd;
-	if (ENDIANNESS == 'l') {
-		for (i = 0; i < 4; i++)
-			pbl_end_cmd[i] = reverse_byte(pbl_end_cmd[i]);
-	}
-
-	for (i = 0; i < 16; i++) {
-		*pmem_buf++ = *p++;
-		pbl_size++;
-	}
-#endif
 
 	/* write load address SCRATCHRW1 */
 	*pmem_buf++ = load_addr & 0xff;

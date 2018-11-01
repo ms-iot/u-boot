@@ -51,9 +51,9 @@ uint32_t pbl_crc32(uint32_t in_crc, const char *buf, uint32_t len)
 
 	for (j = 0; j < (len / 8); j++) {
 		// byte-reverse 8-byte chunk of input into temporary buffer
-		for (i = 0; i < 8; i++) {
+		for (i = 0; i < 8; i++)
 			temp[i] = buf[(j * 8) + (7 - i)];
-		}
+
 		for (i = 0; i < 8; i++) {
 			//printf("%02x\n", (uint32_t)(temp[i] & 0xff));
 			crc32_val = (crc32_val << 8) ^
@@ -63,7 +63,7 @@ uint32_t pbl_crc32(uint32_t in_crc, const char *buf, uint32_t len)
 
 	// remaining bytes don't get swapped for whatever reason
 	for (i = 0; i < (len % 8); i++) {
-		uint8_t ch = buf[((len / 8 ) * 8) + i];
+		uint8_t ch = buf[((len / 8) * 8) + i];
 		//printf("%02x\n", (uint32_t)(ch & 0xff));
 		crc32_val = (crc32_val << 8) ^
 			crc_table[(crc32_val >> 24) ^ (ch & 0xff)];

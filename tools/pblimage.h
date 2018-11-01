@@ -19,7 +19,6 @@ struct pbl_header {
 
 struct image_tool_params;
 void ls1012a_pbl_load_uboot(int ifd, struct image_tool_params *params);
-
 int ls1012a_pblimage_check_params(struct image_tool_params *params);
 
 #endif /* PBLIMAGE_H */

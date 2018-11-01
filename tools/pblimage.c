@@ -195,7 +195,9 @@ static void pbl_parser(char *name)
 			/* Drop all text starting with '#' as comments */
 			if (token[0] == '#')
 				break;
-
+			/* Drop all lines starting with . directive */
+			if (token[0] == '.')
+				break;
 			check_get_hexval(token);
 		}
 	}
@@ -370,7 +372,7 @@ int pblimage_check_params(struct image_tool_params *params)
 		pbi_crc_cmd2 = 0;
 		pbl_cmd_initaddr = params->addr & PBL_ADDR_24BIT_MASK;
 		pbl_cmd_initaddr |= PBL_ACS_CONT_CMD;
-		pbl_cmd_initaddr |= uboot_size;
+		pbl_cmd_initaddr += uboot_size;
 		pbl_end_cmd[0] = 0x09610000;
 		pbl_end_cmd[1] = 0x00000000;
 		pbl_end_cmd[2] = 0x096100c0;

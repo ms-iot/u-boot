@@ -182,6 +182,7 @@ WEAK(apply_core_errata)
 	ret
 
 apply_a53_core_errata:
+
 #ifdef CONFIG_ARM_ERRATA_855873
 	mrs	x0, midr_el1
 	tst	x0, #(0xf << 20)

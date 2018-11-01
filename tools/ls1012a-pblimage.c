@@ -42,7 +42,7 @@ static void swap_byte(uint8_t *a, uint8_t *b)
  * Swap words within dwords, and bytes within words.
  * This equates to reversing all bytes per 8-byte chunk
  */
-static void all_the_swaps(uint8_t *buf, size_t len)
+static void swap_bytes(uint8_t *buf, size_t len)
 {
 	int i;
 
@@ -61,15 +61,15 @@ static void all_the_swaps(uint8_t *buf, size_t len)
 
 static void write_altcbar(uint64_t addr)
 {
-	*pmem_buf++ = 0;
-	*pmem_buf++ = (addr >> 24) & 0xff;
-	*pmem_buf++ = (addr >> 32) & 0xff;
-	*pmem_buf++ = (addr >> 40) & 0xff;
-
-	*pmem_buf++ = 0x58;
-	*pmem_buf++ = 0x01;
-	*pmem_buf++ = 0x57;
 	*pmem_buf++ = 0x09;
+	*pmem_buf++ = 0x57;
+	*pmem_buf++ = 0x01;
+	*pmem_buf++ = 0x58;
+
+	*pmem_buf++ = (addr >> 40) & 0xff;
+	*pmem_buf++ = (addr >> 32) & 0xff;
+	*pmem_buf++ = (addr >> 24) & 0xff;
+	*pmem_buf++ = 0;
 
 	pbl_size += 8;
 }
@@ -78,16 +78,16 @@ static void write_altcbar(uint64_t addr)
 static void load_uboot(FILE *fp_uboot, uint64_t load_addr)
 {
 	int i;
-	uint64_t offset;
-	uint64_t prev_offset_high;
-	uint32_t offset_low;
+	uint64_t dest_addr;
+	uint64_t prev_dest_addr_high;
+	uint32_t dest_addr_low;
 	uint8_t *binary;
 	size_t padded_len;
 	size_t uboot_size;
 	int fd;
 	struct stat st;
 
-	/* make sure we're starting on an 8-byte boundary */
+	/* make sure PBL is starting on an 8-byte boundary */
 	if ((pbl_size % 8) != 0) {
 		printf("Error: invalid alignment in PBL (pbl_size=0x%x)\n",
 		       pbl_size);
@@ -104,7 +104,7 @@ static void load_uboot(FILE *fp_uboot, uint64_t load_addr)
 
 	uboot_size = st.st_size;
 
-	// pad input binary to 128 bytes to make life easy
+	/* pad input binary to 128 bytes to satisfy alignment requirements */
 	padded_len = round_up(uboot_size, 128);
 	binary = (uint8_t *)malloc(padded_len);
 	if (fread(binary, 1, uboot_size, fp_uboot) != uboot_size) {
@@ -113,42 +113,31 @@ static void load_uboot(FILE *fp_uboot, uint64_t load_addr)
 	}
 	memset(binary + uboot_size, 0xff, padded_len - uboot_size);
 
-	prev_offset_high = 0xffULL << 40;
+	prev_dest_addr_high = 0xffULL << 40;
 
-	/* process file in 128-byte chunks */
-	offset = load_addr;
-	for (i = 0; i < (padded_len / 128); i++) {
-		uint8_t buf[128 + 4 + 4];
+	/* process file in 64-byte chunks */
+	dest_addr = load_addr;
+	for (i = 0; i < (padded_len / 64); i++) {
+		dest_addr_low = (uint32_t)(dest_addr & 0x00ffffff);
+		if ((dest_addr & 0x0000ffffff000000ULL) !=
+		    prev_dest_addr_high) {
 
-		offset_low = (uint32_t)(offset & 0x00ffffff);
-		if ((offset & 0x0000ffffff000000ULL) != prev_offset_high) {
-			write_altcbar(offset);
-			prev_offset_high = offset & 0x0000ffffff000000ULL;
+			write_altcbar(dest_addr);
+			prev_dest_addr_high = dest_addr & 0x0000ffffff000000ULL;
 		}
 
-		/* copy data to intermediate buffer */
-		memcpy(&buf[4], &binary[i * 128], 64);
-		memcpy(&buf[72], &binary[i * 128 + 64], 64);
+		/* write command into buffer */
+		*pmem_buf++ = 0x81;	// ALT, SIZE=64, CONT
+		*pmem_buf++ = (dest_addr_low >> 16) & 0xff;
+		*pmem_buf++ = (dest_addr_low >> 8) & 0xff;
+		*pmem_buf++ = dest_addr_low & 0xff;
+		pbl_size += 4;
 
-		/* write commands into buffer */
-		buf[3] = offset_low & 0xff;
-		buf[2] = (offset_low >> 8) & 0xff;
-		buf[1] = (offset_low >> 16) & 0xff;
-		buf[0] = 0x81;	// ALT, SIZE=64, CONT
-
-		buf[68 + 3] = (offset_low + 64) & 0xff;
-		buf[68 + 2] = ((offset_low + 64) >> 8) & 0xff;
-		buf[68 + 1] = ((offset_low + 64) >> 16) & 0xff;
-		buf[68 + 0] = 0x81;	// ALT, SIZE=64, CONT
-
-		all_the_swaps(buf, sizeof(buf));
-
-		// append to pmem_buf
-		memcpy(pmem_buf, buf, sizeof(buf));
-		pmem_buf += sizeof(buf);
-		pbl_size += sizeof(buf);
-
-		offset += 128;
+		/* copy data to buffer */
+		memcpy(pmem_buf, &binary[i * 64], 64);
+		pmem_buf += 64;
+		pbl_size += 64;
+		dest_addr += 64;
 	}
 
 	free(binary);
@@ -166,7 +155,7 @@ static void check_get_hexval(char *token)
 		       lineno, token);
 		exit(EXIT_FAILURE);
 	}
-	printf("%08x\n", bswap_32(hexval));
+
 	for (i = 3; i >= 0; i--) {
 		*pmem_buf++ = (hexval >> (i * 8)) & 0xff;
 		pbl_size++;
@@ -292,11 +281,9 @@ void ls1012a_pbl_load_uboot(int ifd, struct image_tool_params *params)
 	parse_rcw(params->imagename);
 
 	/* parse the pbi.cfg file. */
-	printf("parsing PBI\n");
 	if (params->imagename2[0] != '\0')
 		pbl_parser(params->imagename2);
 
-	printf("done\n");
 	if (params->datafile) {
 		fp_uboot = fopen(params->datafile, "r");
 		if (!fp_uboot) {
@@ -311,7 +298,7 @@ void ls1012a_pbl_load_uboot(int ifd, struct image_tool_params *params)
 	lseek(ifd, 0, SEEK_SET);
 
 	/* swap all but the CRC command */
-	all_the_swaps(mem_buf, pbl_size - 8);
+	swap_bytes(mem_buf, pbl_size - 8);
 
 	size = pbl_size;
 	if (write(ifd, (const void *)&mem_buf, size) != size) {
@@ -323,6 +310,11 @@ void ls1012a_pbl_load_uboot(int ifd, struct image_tool_params *params)
 
 int ls1012a_pblimage_check_params(struct image_tool_params *params)
 {
-	/* everything handled in pbl_load_uboot */
+	/* destination address must be 64-byte aligned */
+	if (params->addr & 0x3f) {
+		printf("Error:0x%x load address must be 64-byte aligned\n",
+		       params->addr);
+		return EXIT_FAILURE;
+	}
 	return 0;
 }

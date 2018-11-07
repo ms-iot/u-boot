@@ -23,7 +23,11 @@
 
 #ifdef CONFIG_SPL
 #define CONFIG_SPL_FRAMEWORK
+#ifdef CONFIG_PBL_RCW_SECUREBOOT
+#define CONFIG_SYS_FSL_PBL_RCW "board/scalys/grapeboard/rcw_secureboot.cfg"
+#else
 #define CONFIG_SYS_FSL_PBL_RCW "board/scalys/grapeboard/rcw.cfg"
+#endif /* CONFIG_PBL_RCW_SECUREBOOT */
 #define CONFIG_SYS_FSL_PBL_PBI "board/scalys/grapeboard/pbi.cfg"
 
 /* Execute from OCRAM */

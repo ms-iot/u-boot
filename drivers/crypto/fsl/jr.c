@@ -188,6 +188,7 @@ static int jr_enqueue(uint32_t *desc_addr,
 	uint32_t desc_word;
 	int length = desc_len(desc_addr);
 	int i;
+	unsigned long start, end;
 #ifdef CONFIG_PHYS_64BIT
 	uint32_t *addr_hi, *addr_lo;
 #endif
@@ -202,6 +203,11 @@ static int jr_enqueue(uint32_t *desc_addr,
 		sec_out32((uint32_t *)&desc_addr[i], desc_word);
 	}
 
+	/* flush the descriptor after modifying it */
+	start = (unsigned long)desc_addr;
+	end = ALIGN(start + length, ARCH_DMA_MINALIGN);
+	flush_dcache_range(start, end);
+
 	phys_addr_t desc_phys_addr = virt_to_phys(desc_addr);
 
 	jr->info[head].desc_phys_addr = desc_phys_addr;
@@ -209,9 +215,9 @@ static int jr_enqueue(uint32_t *desc_addr,
 	jr->info[head].arg = arg;
 	jr->info[head].op_done = 0;
 
-	unsigned long start = (unsigned long)&jr->info[head] &
+	start = (unsigned long)&jr->info[head] &
 					~(ARCH_DMA_MINALIGN - 1);
-	unsigned long end = ALIGN((unsigned long)&jr->info[head] +
+	end = ALIGN((unsigned long)&jr->info[head] +
 				  sizeof(struct jr_info), ARCH_DMA_MINALIGN);
 	flush_dcache_range(start, end);
 

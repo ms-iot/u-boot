@@ -74,6 +74,8 @@
 
 /* Size of malloc() pool */
 #define CONFIG_SYS_MALLOC_LEN				(0x60000 + 128 * 1024 + 0x100000)
+#define CONFIG_SYS_SPL_MALLOC_START	0x80200000
+#define CONFIG_SYS_SPL_MALLOC_SIZE	0x100000
 
 /* QSPI */
 #ifdef CONFIG_QSPI_BOOT

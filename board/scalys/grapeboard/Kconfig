@@ -38,6 +38,14 @@ config PBL_BINARY_SRC
 	help
 		See CONCAT_PBL_UBOOT_IMAGE help.
 
+config PBL_RCW_SECUREBOOT
+	bool
+	default n
+	prompt "Enable Reset Control Word based secure boot for development"
+	help
+		To enable secure boot OTPMK and SRKH must be fused, u-boot-spl.bin must be signed, and the CSF header must be written to SPI flash.
+		While using RCW secure boot a hash or signature failure while loading ESBC will not cause a boot halt, but SSM state will be non-secure.
+		The Intent To Secure fuse should be blown for production platforms.
 endmenu
 
 source "board/freescale/common/Kconfig"

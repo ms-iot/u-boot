@@ -23,7 +23,11 @@
 
 #ifdef CONFIG_SPL
 #define CONFIG_SPL_FRAMEWORK
+#ifdef CONFIG_PBL_RCW_SECUREBOOT
+#define CONFIG_SYS_FSL_PBL_RCW "board/scalys/grapeboard/rcw_secureboot.cfg"
+#else
 #define CONFIG_SYS_FSL_PBL_RCW "board/scalys/grapeboard/rcw.cfg"
+#endif /* CONFIG_PBL_RCW_SECUREBOOT */
 #define CONFIG_SYS_FSL_PBL_PBI "board/scalys/grapeboard/pbi.cfg"
 
 /* Execute from OCRAM */
@@ -70,6 +74,8 @@
 
 /* Size of malloc() pool */
 #define CONFIG_SYS_MALLOC_LEN				(0x60000 + 128 * 1024 + 0x100000)
+#define CONFIG_SYS_SPL_MALLOC_START	0x80200000
+#define CONFIG_SYS_SPL_MALLOC_SIZE	0x100000
 
 /* QSPI */
 #ifdef CONFIG_QSPI_BOOT

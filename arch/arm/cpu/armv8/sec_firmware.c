@@ -6,6 +6,8 @@
 
 #include <common.h>
 #include <errno.h>
+#include <cyres.h>
+#include <u-boot/sha256.h>
 #include <linux/kernel.h>
 #include <asm/io.h>
 #include <asm/system.h>
@@ -34,6 +36,10 @@ phys_addr_t sec_firmware_addr;
 #endif
 #ifndef SEC_FIRMWARE_TARGET_EL
 #define SEC_FIRMWARE_TARGET_EL		2
+#endif
+
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_CYRES)
+sha256_context ppa_optee_sha256_ctx;
 #endif
 
 static int sec_firmware_get_data(const void *sec_firmware_img,
@@ -188,6 +194,12 @@ static int sec_firmware_check_copy_loadable(const void *sec_firmware_img,
 		flush_dcache_range(sec_firmware_loadable_addr,
 				   sec_firmware_loadable_addr + size);
 
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_CYRES)
+		sha256_update(&ppa_optee_sha256_ctx,
+			      (const uint8_t *)sec_firmware_loadable_addr,
+			      (uint32_t)size);
+#endif
+
 		/* Populate loadable address only for Trusted OS */
 		if (!strcmp(str, "trustedOS@1")) {
 			/*
@@ -272,6 +284,13 @@ static int sec_firmware_load_image(const void *sec_firmware_img,
 			SEC_FIRMWARE_ADDR_MASK);
 	if (ret)
 		goto out;
+
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_CYRES)
+	sha256_update(&ppa_optee_sha256_ctx,
+		      (const uint8_t *)(sec_firmware_addr &
+					SEC_FIRMWARE_ADDR_MASK),
+		      (uint32_t)raw_image_size);
+#endif
 
 	/*
 	 * Check if any loadable are present along with firmware image, if
@@ -403,6 +422,11 @@ int sec_firmware_init(const void *sec_firmware_img,
 			u32 *loadable_h)
 {
 	int ret;
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_CYRES)
+	u8 ppa_optee_digest[SHA256_SUM_LEN];
+
+	sha256_starts(&ppa_optee_sha256_ctx);
+#endif
 
 	if (!sec_firmware_is_valid(sec_firmware_img))
 		return -EINVAL;
@@ -413,6 +437,15 @@ int sec_firmware_init(const void *sec_firmware_img,
 		printf("SEC Firmware: Failed to load image\n");
 		return ret;
 	} else if (sec_firmware_addr & SEC_FIRMWARE_LOADED) {
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_CYRES)
+		sha256_finish(&ppa_optee_sha256_ctx, ppa_optee_digest);
+
+		ret = build_cyres_cert_chain("OP-TEE", ppa_optee_digest,
+					     sizeof(ppa_optee_digest));
+		if (ret)
+			printf("cyres: failed to build cert chain (0x%x)!\n",
+			       ret);
+#endif
 		ret = sec_firmware_entry(eret_hold_l, eret_hold_h);
 		if (ret) {
 			printf("SEC Firmware: Failed to initialize\n");

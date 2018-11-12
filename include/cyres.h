@@ -7,10 +7,8 @@
 #ifndef __CYRES_H__
 #define __CYRES_H__
 
-#define CYRES_IDENTITY_LEN 32
-
 struct cyres_hw_identity {
-	uint8_t data[CYRES_IDENTITY_LEN];
+	u32 data[8];
 };
 
 /*
@@ -20,7 +18,8 @@ struct cyres_hw_identity {
  * next_image_name becomes the certificate subject name.
  */
 int build_cyres_cert_chain(const char *next_image_name,
-                           const uint8_t *next_image_sha256);
+			   const u8 *next_image_digest,
+			   size_t digest_size);
 
 /*
  * Implemented by the platform to read a stable device-unique identity,

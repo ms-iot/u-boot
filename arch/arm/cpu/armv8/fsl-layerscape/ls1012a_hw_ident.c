@@ -49,7 +49,7 @@ static void roll_forward_master_key(void)
 
 static int read_master_key(struct cyres_hw_identity *identity)
 {
-	return blob_key_verif((u32 *)identity->data);
+	return blob_key_verif(identity->data);
 }
 
 int read_and_hide_cyres_identity(struct cyres_hw_identity *identity)

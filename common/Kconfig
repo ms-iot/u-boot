@@ -506,10 +506,10 @@ config CYRES_CERT_CHAIN_SIZE
 config CYRES_CERT_CHAIN_PATH_LENGTH
 	int "Path length of the root cert of the certificate chain"
 
-config CYRES_KEY_STORE_ADDR
+config CYRES_KEY_BLOB_ADDR
 	hex "Address in memory to store next image private keys"
 
-config CYRES_KEY_STORE_SIZE
+config CYRES_KEY_BLOB_SIZE
 	hex "Size of buffer allocated to hold key store"
 
 endmenu # Cyres

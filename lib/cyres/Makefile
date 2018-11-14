@@ -13,3 +13,5 @@ obj-y += $(CYRES_ROOT)/RiotHmac.o
 obj-y += $(CYRES_ROOT)/RiotKdf.o
 obj-y += $(CYRES_ROOT)/RiotSha256.o
 obj-y += $(CYRES_ROOT)/RiotX509Bldr.o
+obj-y += $(CYRES_ROOT)/tcps/TcpsId.o
+obj-y += $(CYRES_ROOT)/tcps/cborhelper.o

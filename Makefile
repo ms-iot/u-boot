@@ -636,7 +636,8 @@ UBOOTINCLUDE    := \
 
 ifdef CONFIG_CYRES
 UBOOTINCLUDE += \
-	     -I$(srctree)/external/RIoT/CyReP/cyrep
+	     -I$(srctree)/external/RIoT/CyReP/cyrep \
+	     -I$(srctree)/external/RIoT/CyReP/tcps
 endif
 
 NOSTDINC_FLAGS += -nostdinc -isystem $(shell $(CC) -print-file-name=include)

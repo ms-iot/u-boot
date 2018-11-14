@@ -4,6 +4,7 @@
  * SPDX-License-Identifier:	BSD-3-Clause
  */
 #include <common.h>
+#include <version.h>
 #include <cyres_cert_chain.h>
 #include <cyres.h>
 
@@ -47,6 +48,8 @@ int build_cyres_cert_chain(const char *next_image_name,
 	memset(&root_args, 0, sizeof(root_args));
 	root_args.identity = (const uint8_t *)identity.data;
 	root_args.identity_size = sizeof(identity.data);
+	root_args.fwid = (const uint8_t *)U_BOOT_VERSION;
+	root_args.fwid_size = sizeof(U_BOOT_VERSION);
 	root_args.device_cert_subject = "SPL";
 	root_args.root_path_len = CONFIG_CYRES_CERT_CHAIN_PATH_LENGTH;
 

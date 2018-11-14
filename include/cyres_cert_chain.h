@@ -51,6 +51,8 @@ cyres_result cyres_move_cert_blob(const struct cyres_cert_blob *in_blob,
 struct cyres_root_cert_args {
 	const uint8_t *identity;
 	size_t identity_size;
+	const uint8_t *fwid;
+	size_t fwid_size;
 	const char *device_cert_subject;
 	int root_path_len;
 };
@@ -80,6 +82,12 @@ cyres_result cyres_insert_cert(struct cyres_cert_blob *blob,
 
 cyres_result cyres_cert_to_pem(const struct cyres_cert *cert,
 			       char *buf, size_t *buf_size);
+
+cyres_result cyres_priv_key_to_pem(const struct cyres_key_pair *key,
+				   char *buf, size_t *buf_size);
+
+cyres_result cyres_pub_key_to_pem(const RIOT_ECC_PUBLIC *key,
+				  char *buf, size_t *buf_size);
 
 cyres_result cyres_get_cert_chain_pem(const struct cyres_cert_blob *blob,
 				      const char *subject, char *buf,

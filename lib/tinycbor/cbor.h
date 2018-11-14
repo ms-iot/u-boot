@@ -25,6 +25,9 @@
 #ifndef CBOR_H
 #define CBOR_H
 
+#ifdef __UBOOT__
+#include <common.h>
+#else /* __UBOOT__ */
 #ifndef assert
 #include <assert.h>
 #endif
@@ -33,6 +36,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#endif /* __UBOOT__ */
 
 #include "tinycbor-version.h"
 

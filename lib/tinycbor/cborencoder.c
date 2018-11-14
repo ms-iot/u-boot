@@ -36,8 +36,10 @@
 #include "cborinternal_p.h"
 #include "compilersupport_p.h"
 
+#ifndef __UBOOT__
 #include <stdlib.h>
 #include <string.h>
+#endif
 
 /**
  * \defgroup CborEncoding Encoding to CBOR
@@ -455,9 +457,9 @@ CborError cbor_encode_text_string(CborEncoder *encoder, const char *string, size
     return encode_string(encoder, length, TextStringType << MajorTypeShift, string);
 }
 
-#ifdef __GNUC__
-__attribute__((noinline))
-#endif
+//#ifdef __GNUC__
+//__attribute__((noinline))
+//#endif
 static CborError create_container(CborEncoder *encoder, CborEncoder *container, size_t length, uint8_t shiftedMajorType)
 {
     CborError err;

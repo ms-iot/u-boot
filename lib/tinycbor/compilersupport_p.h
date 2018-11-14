@@ -33,6 +33,11 @@
 #ifndef _DEFAULT_SOURCE
 #  define _DEFAULT_SOURCE
 #endif
+#ifdef __UBOOT__
+#include <common.h>
+#define UINT32_MAX 0xffffffff
+#define INT64_MAX 0x7fffffffffffffffULL
+#else /* __UBOOT__ */
 #ifndef assert
 #  include <assert.h>
 #endif
@@ -45,12 +50,15 @@
 #ifndef __cplusplus
 #  include <stdbool.h>
 #endif
+#endif /* __UBOOT__ */
 
 #ifdef __F16C__
 #  include <immintrin.h>
 #endif
 
-#if __STDC_VERSION__ >= 201112L || __cplusplus >= 201103L || __cpp_static_assert >= 200410
+#if defined(__UBOOT__)
+#  define cbor_static_assert(x)         _Static_assert(x, #x)
+#elif __STDC_VERSION__ >= 201112L || __cplusplus >= 201103L || __cpp_static_assert >= 200410
 #  define cbor_static_assert(x)         static_assert(x, #x)
 #elif !defined(__cplusplus) && defined(__GNUC__) && (__GNUC__ * 100 + __GNUC_MINOR__ >= 406) && (__STDC_VERSION__ > 199901L)
 #  define cbor_static_assert(x)         _Static_assert(x, #x)
@@ -247,6 +255,10 @@ static inline unsigned short encode_half(double val)
 /* this function was copied & adapted from RFC 7049 Appendix D */
 static inline double decode_half(unsigned short half)
 {
+#ifdef __UBOOT__
+	panic("no math support");
+	return 0;
+#else /* __UBOOT__ */
 #ifdef __F16C__
     return _cvtsh_ss(half);
 #else
@@ -258,6 +270,7 @@ static inline double decode_half(unsigned short half)
     else val = mant == 0 ? INFINITY : NAN;
     return half & 0x8000 ? -val : val;
 #endif
+#endif /* __UBOOT__ */
 }
 
 #endif /* COMPILERSUPPORT_H */

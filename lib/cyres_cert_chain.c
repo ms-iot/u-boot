@@ -37,6 +37,7 @@
 #include <RiotDerEnc.h>
 #include <RiotX509Bldr.h>
 #include <RiotCrypt.h>
+#include <TcpsId.h>
 
 #include <cyres_cert_chain.h>
 
@@ -50,6 +51,9 @@
 #endif
 
 #define STR_LITERAL_LEN(s) (sizeof(s) - 1)
+
+#define TCPS_ID_BUF_LEN \
+	((TCPS_ID_PUBKEY_LENGTH * 2) + TCPS_ID_FWID_LENGTH + 32)
 
 struct cyres_cert_blob {
 	struct fdt_header fdt;	/* must be first member of struct */
@@ -312,6 +316,8 @@ end:
 static cyres_result cyres_gen_device_cert(const char *issuer_name,
 					  const char *subject_name,
 					  const RIOT_ECC_PUBLIC *device_id_pub,
+					  const uint8_t *fwid,
+					  size_t fwid_size,
 					  int path_len,
 					  struct cyres_cert **cert_out)
 {
@@ -322,7 +328,8 @@ static cyres_result cyres_gen_device_cert(const char *issuer_name,
 	RIOT_ECC_SIGNATURE tbs_sig;
 	RIOT_X509_TBS_DATA tbs_data;
 	struct cyres_key_pair test_key;
-	uint8_t tcps[1] = {0}; // XXX what is this
+	uint32_t tcps_len;
+	uint8_t tcps[TCPS_ID_BUF_LEN];
 
 	memcpy(&test_key.pub, test_ecc_pub, sizeof(test_key.pub));
 	memcpy(&test_key.priv, test_ecc_priv, sizeof(test_key.priv));
@@ -340,10 +347,33 @@ static cyres_result cyres_gen_device_cert(const char *issuer_name,
 	tbs_data.IssuerCommon = issuer_name;
 	tbs_data.SubjectCommon = subject_name;
 
-	ret = X509GetDeviceCertTBS(&cert->context, &tbs_data,
+	status = BuildTCPSDeviceIdentity((RIOT_ECC_PUBLIC *)
+					 device_id_pub, /* discard const */
+					 (RIOT_ECC_PUBLIC *) /* discard
+								const */
+					 device_id_pub, /* XXX need to change
+							   this to public key
+							   used to validate the
+							   firmware was signed
+							 */
+					 (uint8_t *)fwid, /* discard const */
+					 (uint32_t)fwid_size,
+					 tcps,
+					 sizeof(tcps),
+					 &tcps_len);
+	if (status != RIOT_SUCCESS) {
+		res = cyres_result_from_riot(status);
+		goto end;
+	}
+
+	ret = X509GetDeviceCertTBS(&cert->context,
+				   &tbs_data,
 				   (RIOT_ECC_PUBLIC *)
 				   device_id_pub, // discard const
-				   &test_key.pub, tcps, sizeof(tcps), path_len);
+				   &test_key.pub,
+				   tcps,
+				   tcps_len,
+				   path_len);
 	if (ret) {
 		res = cyres_result_from_x509(ret);
 		goto end;
@@ -458,10 +488,12 @@ cyres_insert_root_and_device_certs(struct cyres_cert_blob *blob,
 	RIOT_STATUS status;
 	struct cyres_cert *root_cert = NULL;
 	struct cyres_cert *device_cert = NULL;
-	uint8_t digest[RIOT_DIGEST_LENGTH];
+	uint8_t identity_digest[RIOT_DIGEST_LENGTH];
 
 	/* don't use device identity directly */
-	status = RiotCrypt_Hash(digest, sizeof(digest), args->identity,
+	status = RiotCrypt_Hash(identity_digest,
+				sizeof(identity_digest),
+				args->identity,
 				args->identity_size);
 	if (status != RIOT_SUCCESS) {
 		res = cyres_result_from_riot(status);
@@ -471,8 +503,8 @@ cyres_insert_root_and_device_certs(struct cyres_cert_blob *blob,
 	/* derive DeviceID key pair from device identity */
 	status = RiotCrypt_DeriveEccKey(&device_key_pair->pub,
 					&device_key_pair->priv,
-					digest,
-					sizeof(digest),
+					identity_digest,
+					sizeof(identity_digest),
 					(const uint8_t *)RIOT_LABEL_IDENTITY,
 					STR_LITERAL_LEN(RIOT_LABEL_IDENTITY));
 
@@ -502,6 +534,8 @@ cyres_insert_root_and_device_certs(struct cyres_cert_blob *blob,
 	res = cyres_gen_device_cert("Contoso Ltd.",
 				    args->device_cert_subject,
 				    &device_key_pair->pub,
+				    args->fwid,
+				    args->fwid_size,
 				    args->root_path_len - 1,
 				    &device_cert);
 	if (res)
@@ -515,7 +549,7 @@ cyres_insert_root_and_device_certs(struct cyres_cert_blob *blob,
 		goto end;
 
 end:
-	cyres_zero_mem(digest, sizeof(digest));
+	cyres_zero_mem(identity_digest, sizeof(identity_digest));
 
 	return res;
 }
@@ -527,11 +561,12 @@ cyres_result cyres_gen_alias_cert(const struct cyres_gen_alias_cert_args *args,
 	cyres_result res;
 	int ret;
 	RIOT_STATUS status;
+	uint32_t tcps_len;
 	struct cyres_cert *cert = NULL;
 	RIOT_ECC_SIGNATURE tbs_sig;
 	RIOT_X509_TBS_DATA tbs_data;
 	uint8_t digest[RIOT_DIGEST_LENGTH];
-	uint8_t tcps_buf[1] = {0};	// XXX what the heck is this?
+	uint8_t tcps[TCPS_ID_BUF_LEN];
 
 	// hash seed data to 256-bit digest
 	status = RiotCrypt_Hash(digest, sizeof(digest),
@@ -578,6 +613,20 @@ cyres_result cyres_gen_alias_cert(const struct cyres_gen_alias_cert_args *args,
 	if (res)
 		return res;
 
+	status = BuildTCPSAliasIdentity((RIOT_ECC_PUBLIC *) /* discard const */
+					args->auth_key_pub,
+					(uint8_t *) /* discard const */
+					args->subject_digest,
+					args->subject_digest_size,
+					tcps,
+					sizeof(tcps),
+					&tcps_len);
+
+	if (status != RIOT_SUCCESS) {
+		res = cyres_result_from_riot(status);
+		goto end;
+	}
+
 	ret = X509GetAliasCertTBS(&cert->context,
 				  &tbs_data,
 				  &subject_key_pair->pub,
@@ -587,8 +636,8 @@ cyres_result cyres_gen_alias_cert(const struct cyres_gen_alias_cert_args *args,
 				  (uint8_t *)args->subject_digest,
 				  /* discard const */
 				  args->subject_digest_size,
-				  tcps_buf,
-				  sizeof(tcps_buf),
+				  tcps,
+				  tcps_len,
 				  args->path_len);
 
 	if (ret) {
@@ -707,6 +756,64 @@ cyres_result cyres_insert_cert(struct cyres_cert_blob *blob,
 				 cert->subject_name);
 	if (ret)
 		return cyres_result_from_fdt(ret);
+
+	return CYRES_SUCCESS;
+}
+
+cyres_result cyres_priv_key_to_pem(const struct cyres_key_pair *key,
+				   char *buf, size_t *buf_size)
+{
+	DERBuilderContext context;
+	uint32_t length;
+	int ret;
+	uint8_t der_buf[DER_MAX_TBS];
+
+	DERInitContext(&context, der_buf, sizeof(der_buf));
+	ret = X509GetDEREcc(&context, key->pub, key->priv);
+	if (ret)
+		return cyres_result_from_x509(ret);
+
+	if (buf && *buf_size > 0)
+		length = *buf_size - 1;
+	else
+		length = 0;
+
+	ret = DERtoPEM(&context, R_ECC_PRIVATEKEY_TYPE, buf, &length);
+	if (ret) {
+		*buf_size = length + 1;
+		return CYRES_ERROR_SHORT_BUFFER;
+	}
+
+	buf[length] = '\0';
+
+	return CYRES_SUCCESS;
+}
+
+cyres_result cyres_pub_key_to_pem(const RIOT_ECC_PUBLIC *key,
+				  char *buf, size_t *buf_size)
+{
+	DERBuilderContext context;
+	uint32_t length;
+	int ret;
+	uint8_t der_buf[DER_MAX_TBS];
+
+	DERInitContext(&context, der_buf, sizeof(der_buf));
+	ret = X509GetDEREccPub(&context, *key);
+	if (ret)
+		return cyres_result_from_x509(ret);
+
+	if (buf && *buf_size > 0)
+		length = *buf_size - 1;
+	else
+		length = 0;
+
+	ret = DERtoPEM(&context, R_PUBLICKEY_TYPE, buf, &length);
+	if (ret) {
+		*buf_size = length + 1;
+		return CYRES_ERROR_SHORT_BUFFER;
+	}
+
+	buf[length] = '\0';
 
 	return CYRES_SUCCESS;
 }

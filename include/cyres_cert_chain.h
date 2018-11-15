@@ -15,6 +15,7 @@
 #define CYRES_SUCCESS			0x00000000
 #define CYRES_ERROR_GENERIC		0xFFFF0000
 #define CYRES_ERROR_BAD_FORMAT		0xFFFF0005
+#define CYRES_ERROR_BAD_PARAMETERS	0xFFFF0006
 #define CYRES_ERROR_NOT_IMPLEMENTED	0xFFFF0009
 #define CYRES_ERROR_SHORT_BUFFER	0xFFFF0010
 #define CYRES_ERROR_OUT_OF_MEMORY	0xFFFF000C
@@ -51,6 +52,8 @@ cyres_result cyres_move_cert_blob(const struct cyres_cert_blob *in_blob,
 struct cyres_root_cert_args {
 	const uint8_t *identity;
 	size_t identity_size;
+	const uint8_t *fwid;
+	size_t fwid_size;
 	const char *device_cert_subject;
 	int root_path_len;
 };
@@ -66,6 +69,7 @@ struct cyres_gen_alias_cert_args {
 	size_t seed_data_size;
 	const void *subject_digest;
 	size_t subject_digest_size;
+	const RIOT_ECC_PUBLIC *auth_key_pub;
 	const char *subject_name;
 	const char *issuer_name;
 	uint32_t path_len;
@@ -80,6 +84,12 @@ cyres_result cyres_insert_cert(struct cyres_cert_blob *blob,
 
 cyres_result cyres_cert_to_pem(const struct cyres_cert *cert,
 			       char *buf, size_t *buf_size);
+
+cyres_result cyres_priv_key_to_pem(const struct cyres_key_pair *key,
+				   char *buf, size_t *buf_size);
+
+cyres_result cyres_pub_key_to_pem(const RIOT_ECC_PUBLIC *key,
+				  char *buf, size_t *buf_size);
 
 cyres_result cyres_get_cert_chain_pem(const struct cyres_cert_blob *blob,
 				      const char *subject, char *buf,

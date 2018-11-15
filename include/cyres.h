@@ -11,6 +11,10 @@ struct cyres_hw_identity {
 	u32 data[8];
 };
 
+struct cyres_ecc_pub {
+	u32 data[19];
+};
+
 /*
  * Builds a Cyres certificate chain and places it at
  * CONFIG_CYRES_CERT_CHAIN_ADDR. Boot loader code should call this when
@@ -19,7 +23,8 @@ struct cyres_hw_identity {
  */
 int build_cyres_cert_chain(const char *next_image_name,
 			   const u8 *next_image_digest,
-			   size_t digest_size);
+			   size_t digest_size,
+			   const struct cyres_ecc_pub *next_image_auth_key_pub);
 
 /*
  * Implemented by the platform to read a stable device-unique identity,

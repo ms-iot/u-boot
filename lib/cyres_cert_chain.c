@@ -561,11 +561,12 @@ cyres_result cyres_gen_alias_cert(const struct cyres_gen_alias_cert_args *args,
 	cyres_result res;
 	int ret;
 	RIOT_STATUS status;
+	uint32_t tcps_len;
 	struct cyres_cert *cert = NULL;
 	RIOT_ECC_SIGNATURE tbs_sig;
 	RIOT_X509_TBS_DATA tbs_data;
 	uint8_t digest[RIOT_DIGEST_LENGTH];
-	uint8_t tcps_buf[1] = {0};	// XXX what the heck is this?
+	uint8_t tcps[TCPS_ID_BUF_LEN];
 
 	// hash seed data to 256-bit digest
 	status = RiotCrypt_Hash(digest, sizeof(digest),
@@ -612,6 +613,20 @@ cyres_result cyres_gen_alias_cert(const struct cyres_gen_alias_cert_args *args,
 	if (res)
 		return res;
 
+	status = BuildTCPSAliasIdentity((RIOT_ECC_PUBLIC *) /* discard const */
+					args->auth_key_pub,
+					(uint8_t *) /* discard const */
+					args->subject_digest,
+					args->subject_digest_size,
+					tcps,
+					sizeof(tcps),
+					&tcps_len);
+
+	if (status != RIOT_SUCCESS) {
+		res = cyres_result_from_riot(status);
+		goto end;
+	}
+
 	ret = X509GetAliasCertTBS(&cert->context,
 				  &tbs_data,
 				  &subject_key_pair->pub,
@@ -621,8 +636,8 @@ cyres_result cyres_gen_alias_cert(const struct cyres_gen_alias_cert_args *args,
 				  (uint8_t *)args->subject_digest,
 				  /* discard const */
 				  args->subject_digest_size,
-				  tcps_buf,
-				  sizeof(tcps_buf),
+				  tcps,
+				  tcps_len,
 				  args->path_len);
 
 	if (ret) {

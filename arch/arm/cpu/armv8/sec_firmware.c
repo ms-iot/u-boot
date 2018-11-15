@@ -423,6 +423,7 @@ int sec_firmware_init(const void *sec_firmware_img,
 {
 	int ret;
 #if defined(CONFIG_SPL_BUILD) && defined(CONFIG_CYRES)
+	struct cyres_ecc_pub optee_auth_key_pub;
 	u8 ppa_optee_digest[SHA256_SUM_LEN];
 
 	sha256_starts(&ppa_optee_sha256_ctx);
@@ -440,8 +441,13 @@ int sec_firmware_init(const void *sec_firmware_img,
 #if defined(CONFIG_SPL_BUILD) && defined(CONFIG_CYRES)
 		sha256_finish(&ppa_optee_sha256_ctx, ppa_optee_digest);
 
-		ret = build_cyres_cert_chain("OP-TEE", ppa_optee_digest,
-					     sizeof(ppa_optee_digest));
+		/* XXX need to set this when authentication is implemented */
+		memset(&optee_auth_key_pub, 0, sizeof(optee_auth_key_pub));
+
+		ret = build_cyres_cert_chain("OP-TEE",
+					     ppa_optee_digest,
+					     sizeof(ppa_optee_digest),
+					     &optee_auth_key_pub);
 		if (ret)
 			printf("cyres: failed to build cert chain (0x%x)!\n",
 			       ret);

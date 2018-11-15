@@ -8,6 +8,9 @@
 #include <cyres_cert_chain.h>
 #include <cyres.h>
 
+_Static_assert(sizeof(struct cyres_ecc_pub) == sizeof(RIOT_ECC_PUBLIC),
+	       "Incorrect ECC public key size");
+
 static int uboot_ret_from_cyres(cyres_result res)
 {
 	/*
@@ -19,7 +22,8 @@ static int uboot_ret_from_cyres(cyres_result res)
 
 int build_cyres_cert_chain(const char *next_image_name,
 			   const u8 *next_image_digest,
-			   size_t digest_size)
+			   size_t digest_size,
+			   const struct cyres_ecc_pub *next_image_auth_key_pub)
 {
 	cyres_result res;
 	struct cyres_cert_blob *cert_blob = NULL;
@@ -66,6 +70,7 @@ int build_cyres_cert_chain(const char *next_image_name,
 	args.seed_data_size = sizeof(device_key_pair.priv);
 	args.subject_digest = next_image_digest;
 	args.subject_digest_size = digest_size;
+	args.auth_key_pub = (const RIOT_ECC_PUBLIC *)next_image_auth_key_pub;
 	args.subject_name = next_image_name;
 	args.issuer_name = "SPL";
 	args.path_len = 2;

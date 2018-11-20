@@ -389,6 +389,15 @@ config TARGET_MX6ULL_14X14_EVK
 	select MX6ULL
 	imply CMD_DM
 
+config TARGET_MX6VAB820
+	bool "mx6vab820"
+	select MX6QDL
+	select BOARD_LATE_INIT
+	select SUPPORT_SPL
+	select DM
+	select DM_THERMAL
+	select BOARD_EARLY_INIT_F
+
 config TARGET_NITROGEN6X
 	bool "nitrogen6x"
 	imply USB_ETHER_ASIX
@@ -574,6 +583,7 @@ source "board/toradex/colibri-imx6ull/Kconfig"
 source "board/k+p/kp_imx6q_tpc/Kconfig"
 source "board/udoo/Kconfig"
 source "board/udoo/neo/Kconfig"
+source "board/via/mx6vab820/Kconfig"
 source "board/wandboard/Kconfig"
 source "board/warp/Kconfig"
 

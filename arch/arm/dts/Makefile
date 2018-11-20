@@ -425,6 +425,7 @@ dtb-$(CONFIG_MX6QDL) += \
 	imx6qdl-sdb.dtb \
 	imx6qdl-sabrelite.dtb \
 	imx6qdl-mx6cuboxi.dtb \
+	imx6qdl-vab820.dtb \
 	imx6q-cm-fx6.dtb \
 	imx6q-icore.dtb \
 	imx6q-icore-mipi.dtb \

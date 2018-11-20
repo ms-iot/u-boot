@@ -1,0 +1,7 @@
+MX6VAB820 BOARD
+S:	Maintained
+F:	board/via/mx6vab820/
+F:	include/configs/mx6vab820.h
+F:	include/configs/mx6vab820_common.h
+F:	configs/mx6vab820_nt_defconfig
+F:	arch/arm/dts/imx6qdl-vab820.dts

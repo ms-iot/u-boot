@@ -45,6 +45,31 @@ static int do_part_uuid(int argc, char * const argv[])
 	return 0;
 }
 
+#ifdef CONFIG_PARTITION_TYPE_GUID
+static int do_part_type_guid(int argc, char * const argv[])
+{
+	int part;
+	struct blk_desc *dev_desc;
+	disk_partition_t info;
+
+	if (argc < 2)
+		return CMD_RET_USAGE;
+	if (argc > 3)
+		return CMD_RET_USAGE;
+
+	part = blk_get_device_part_str(argv[0], argv[1], &dev_desc, &info, 0);
+	if (part < 0)
+		return 1;
+
+	if (argc > 2)
+		env_set(argv[2], info.type_guid);
+	else
+		printf("%s\n", info.type_guid);
+
+	return 0;
+}
+#endif
+
 static int do_part_list(int argc, char * const argv[])
 {
 	int ret;
@@ -189,6 +214,10 @@ static int do_part(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		return do_part_start(argc - 2, argv + 2);
 	else if (!strcmp(argv[1], "size"))
 		return do_part_size(argc - 2, argv + 2);
+#ifdef CONFIG_PARTITION_TYPE_GUID
+	else if (!strcmp(argv[1], "type"))
+		return do_part_type_guid(argc - 2, argv + 2);
+#endif
 
 	return CMD_RET_USAGE;
 }
@@ -209,4 +238,10 @@ U_BOOT_CMD(
 	"    - set environment variable to the start of the partition (in blocks)\n"
 	"part size <interface> <dev> <part> <varname>\n"
 	"    - set environment variable to the size of the partition (in blocks)"
+#ifdef CONFIG_PARTITION_TYPE_GUID
+	"part type <interface> <dev>:<part>\n"
+	"    - print partition type GUID\n"
+	"part type <interface> <dev>:<part> <varname>\n"
+	"    - set environment variable to partition type GUID\n"
+#endif
 );

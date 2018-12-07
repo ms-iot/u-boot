@@ -186,6 +186,7 @@ static void _mxc_serial_setbrg(struct mxc_uart *base, unsigned long clk,
 #endif
 
 #define mxc_base	((struct mxc_uart *)CONFIG_MXC_UART_BASE)
+#define mxc_base2	((struct mxc_uart *)UART2_BASE_ADDR)
 
 static void mxc_serial_setbrg(void)
 {
@@ -195,6 +196,7 @@ static void mxc_serial_setbrg(void)
 		gd->baudrate = CONFIG_BAUDRATE;
 
 	_mxc_serial_setbrg(mxc_base, clk, gd->baudrate, false);
+	_mxc_serial_setbrg(mxc_base2, clk, gd->baudrate, false);
 }
 
 static int mxc_serial_getc(void)
@@ -233,6 +235,7 @@ static int mxc_serial_tstc(void)
 static int mxc_serial_init(void)
 {
 	_mxc_serial_init(mxc_base);
+	_mxc_serial_init(mxc_base2);
 
 	serial_setbrg();
 

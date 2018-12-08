@@ -33,6 +33,8 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#define I2C_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_HYS | PAD_CTL_PUE)
+
 #define QSPI_PAD_CTRL	(PAD_CTL_DSE2 | PAD_CTL_HYS)
 
 #define UART_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_FSEL1)
@@ -69,6 +71,32 @@ static iomux_v3_cfg_t const uart_pads[] = {
 	IMX8MQ_PAD_UART1_TXD__UART1_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
 	IMX8MQ_PAD_UART2_RXD__UART2_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
 	IMX8MQ_PAD_UART2_TXD__UART2_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
+};
+
+struct i2c_pads_info i2c_pad_info2 = {
+	.scl = {
+		.i2c_mode = IMX8MQ_PAD_I2C2_SCL__I2C2_SCL | MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gpio_mode = IMX8MQ_PAD_I2C2_SCL__GPIO5_IO16 | MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gp = IMX_GPIO_NR(5, 16),
+	},
+	.sda = {
+		.i2c_mode = IMX8MQ_PAD_I2C2_SDA__I2C2_SDA | MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gpio_mode = IMX8MQ_PAD_I2C2_SDA__GPIO5_IO17 | MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gp = IMX_GPIO_NR(5, 17),
+	},
+};
+
+struct i2c_pads_info i2c_pad_info3 = {
+	.scl = {
+		.i2c_mode = IMX8MQ_PAD_I2C3_SCL__I2C3_SCL | MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gpio_mode = IMX8MQ_PAD_I2C3_SCL__GPIO5_IO18 | MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gp = IMX_GPIO_NR(5, 18),
+	},
+	.sda = {
+		.i2c_mode = IMX8MQ_PAD_I2C3_SDA__I2C3_SDA | MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gpio_mode = IMX8MQ_PAD_I2C3_SDA__GPIO5_IO19 | MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gp = IMX_GPIO_NR(5, 19),
+	},
 };
 
 int board_early_init_f(void)
@@ -297,6 +325,12 @@ int board_usb_cleanup(int index, enum usb_init_type init)
 
 int board_init(void)
 {
+	//	enable_interrupts();
+	// work around issue where ISR.Abort is set during UBOOT board_init_r and
+	// is caught in UEFI when the interrupt is unmasked.  Unmasking it here
+	// causes the ISR.Abort to never be set.
+	asm volatile("msr daifclr, #4");
+
 	board_qspi_init();
 
 #ifdef CONFIG_FEC_MXC
@@ -310,6 +344,11 @@ int board_init(void)
 #ifdef CONFIG_USB_TCPC
 	setup_typec();
 #endif
+
+	/* I2C initialization */
+	setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info2);
+	setup_i2c(2, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info3);
+
 	return 0;
 }
 

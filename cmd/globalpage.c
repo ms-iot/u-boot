@@ -30,7 +30,7 @@ int globalpage_init(char* const arg)
 {
 	global_page = (struct imx_global_page *) simple_strtol(arg, NULL, 16);
 
-	printf("Initializing 4KB of memory at 0x%X as the global page.\n", (int)global_page);
+	printf("Initializing 4KB of memory at 0x%p as the global page.\n", global_page);
 
 	/* Clear global page */
 	memset(global_page, 0, 0x1000);

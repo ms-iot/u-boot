@@ -176,6 +176,7 @@
 			"booti; " \
 		"fi;\0"
 
+#if !defined(CONFIG_BOOTCOMMAND)
 #define CONFIG_BOOTCOMMAND \
 	   "mmc dev ${mmcdev}; if mmc rescan; then " \
 		   "if run loadbootscript; then " \
@@ -187,6 +188,7 @@
 			   "fi; " \
 		   "fi; " \
 	   "else booti ${loadaddr} - ${fdt_addr}; fi"
+#endif
 
 /* Link Definitions */
 #define CONFIG_LOADADDR			0x40480000

@@ -46,7 +46,7 @@ config IMX_BOOTAUX
 config IMX_PERSIST_INIT
 	bool "Persist initialized IPs when booting an OS"
 	default n
-	depends on ARCH_MX7 || ARCH_MX6
+	depends on ARCH_MX7 || ARCH_MX6 || ARCH_IMX8M
 	help
 	  This option disables the custom arch_preboot_os for iMX
 	  to leave several IPs enabled while booting into an OS.

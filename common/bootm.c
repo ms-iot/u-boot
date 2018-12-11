@@ -500,6 +500,7 @@ ulong bootm_disable_interrupts(void)
 # endif
 #endif
 
+#if !defined(CONFIG_IMX_PERSIST_INIT)
 #if defined(CONFIG_CMD_USB)
 	/*
 	 * turn off USB to prevent the host controller from writing to the
@@ -511,6 +512,7 @@ ulong bootm_disable_interrupts(void)
 	 * details see the OpenHCI specification.
 	 */
 	usb_stop();
+#endif
 #endif
 	return iflag;
 }

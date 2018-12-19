@@ -310,30 +310,11 @@ int board_mmc_init(bd_t *bis)
 
 	return 0;
 #else
-	struct src *psrc = (struct src *)SRC_BASE_ADDR;
-	unsigned int reg = readl(&psrc->sbmr1) >> 11;
-	/*
-	 * Upon reading BOOT_CFG register the following map is done:
-	 * Bit 11 and 12 of BOOT_CFG register can determine the current
-	 * mmc port
-	 * 0x1                  SD2
-	 * 0x3                  SD4
-	 */
-
-	switch (reg & 0x3) {
-	case 0x1:
-		usdhc_cfg[0].esdhc_base = USDHC2_BASE_ADDR;
-		usdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_ESDHC2_CLK);
-		/* sd2 = 4bit */
-		usdhc_cfg[0].max_bus_width = 4;
-		gd->arch.sdhc_clk = usdhc_cfg[0].sdhc_clk;
-		break;
-	default:
-		usdhc_cfg[0].esdhc_base = USDHC4_BASE_ADDR;
-		usdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_ESDHC4_CLK);
-		gd->arch.sdhc_clk = usdhc_cfg[0].sdhc_clk;
-		break;
-	}
+	usdhc_cfg[0].esdhc_base = USDHC2_BASE_ADDR;
+	usdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_ESDHC2_CLK);
+	/* sd2 = 4bit */
+	usdhc_cfg[0].max_bus_width = 4;
+	gd->arch.sdhc_clk = usdhc_cfg[0].sdhc_clk;
 
 	return fsl_esdhc_initialize(bis, &usdhc_cfg[0]);
 #endif /* CONFIG_SPL_BUILD */

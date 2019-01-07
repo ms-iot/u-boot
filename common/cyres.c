@@ -8,9 +8,6 @@
 #include <cyres_cert_chain.h>
 #include <cyres.h>
 
-_Static_assert(sizeof(struct cyres_ecc_pub) == sizeof(RIOT_ECC_PUBLIC),
-	       "Incorrect ECC public key size");
-
 static int uboot_ret_from_cyres(cyres_result res)
 {
 	/*
@@ -23,7 +20,8 @@ static int uboot_ret_from_cyres(cyres_result res)
 int build_cyres_cert_chain(const char *next_image_name,
 			   const u8 *next_image_digest,
 			   size_t digest_size,
-			   const struct cyres_ecc_pub *next_image_auth_key_pub)
+			   const u8 *auth_key_pub,
+			   size_t auth_key_pub_size)
 {
 	cyres_result res;
 	struct cyres_cert_blob *cert_blob = NULL;
@@ -33,6 +31,8 @@ int build_cyres_cert_chain(const char *next_image_name,
 	struct cyres_key_pair next_image_key_pair;
 	struct cyres_root_cert_args root_args;
 	struct cyres_gen_alias_cert_args args;
+	uint8_t fake_spl_auth_key_pub[1] = { 0 }; /* XXX get the public key that
+						     was used to validate SPL */
 
 	res = read_and_hide_cyres_identity(&identity);
 	if (res != 0) {
@@ -54,6 +54,8 @@ int build_cyres_cert_chain(const char *next_image_name,
 	root_args.identity_size = sizeof(identity.data);
 	root_args.fwid = (const uint8_t *)U_BOOT_VERSION;
 	root_args.fwid_size = sizeof(U_BOOT_VERSION);
+	root_args.auth_key_pub = fake_spl_auth_key_pub;
+	root_args.auth_key_pub_size = sizeof(fake_spl_auth_key_pub);
 	root_args.device_cert_subject = "SPL";
 	root_args.root_path_len = CONFIG_CYRES_CERT_CHAIN_PATH_LENGTH;
 
@@ -70,7 +72,8 @@ int build_cyres_cert_chain(const char *next_image_name,
 	args.seed_data_size = sizeof(device_key_pair.priv);
 	args.subject_digest = next_image_digest;
 	args.subject_digest_size = digest_size;
-	args.auth_key_pub = (const RIOT_ECC_PUBLIC *)next_image_auth_key_pub;
+	args.auth_key_pub = auth_key_pub;
+	args.auth_key_pub_size = auth_key_pub_size;
 	args.subject_name = next_image_name;
 	args.issuer_name = "SPL";
 	args.path_len = 2;
@@ -101,6 +104,14 @@ end:
 
 	if (cert)
 		cyres_free_cert(cert);
+
+	if (res != CYRES_SUCCESS) {
+		memset((void *)CONFIG_CYRES_KEY_BLOB_ADDR, 0,
+		       CONFIG_CYRES_KEY_BLOB_SIZE);
+
+		memset((void *)CONFIG_CYRES_CERT_CHAIN_ADDR, 0,
+		       CONFIG_CYRES_CERT_CHAIN_SIZE);
+	}
 
 	cyres_zero_mem(&identity, sizeof(identity));
 	cyres_zero_mem(&device_key_pair, sizeof(device_key_pair));

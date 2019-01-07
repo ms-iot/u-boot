@@ -52,9 +52,6 @@
 
 #define STR_LITERAL_LEN(s) (sizeof(s) - 1)
 
-#define TCPS_ID_BUF_LEN \
-	((TCPS_ID_PUBKEY_LENGTH * 2) + TCPS_ID_FWID_LENGTH + 32)
-
 struct cyres_cert_blob {
 	struct fdt_header fdt;	/* must be first member of struct */
 	char _body[1];
@@ -313,12 +310,9 @@ end:
 	return res;
 }
 
-static cyres_result cyres_gen_device_cert(const char *issuer_name,
-					  const char *subject_name,
+static cyres_result cyres_gen_device_cert(const struct cyres_root_cert_args *args,
+					  const char *issuer_name,
 					  const RIOT_ECC_PUBLIC *device_id_pub,
-					  const uint8_t *fwid,
-					  size_t fwid_size,
-					  int path_len,
 					  struct cyres_cert **cert_out)
 {
 	cyres_result res;
@@ -328,13 +322,13 @@ static cyres_result cyres_gen_device_cert(const char *issuer_name,
 	RIOT_ECC_SIGNATURE tbs_sig;
 	RIOT_X509_TBS_DATA tbs_data;
 	struct cyres_key_pair test_key;
-	uint32_t tcps_len;
-	uint8_t tcps[TCPS_ID_BUF_LEN];
+	uint32_t claim_len;
+	uint8_t claim[1024];
 
 	memcpy(&test_key.pub, test_ecc_pub, sizeof(test_key.pub));
 	memcpy(&test_key.priv, test_ecc_priv, sizeof(test_key.priv));
 
-	res = cyres_alloc_cert(issuer_name, subject_name, &cert);
+	res = cyres_alloc_cert(issuer_name, args->device_cert_subject, &cert);
 	if (res)
 		return res;
 
@@ -345,22 +339,16 @@ static cyres_result cyres_gen_device_cert(const char *issuer_name,
 
 	memcpy(&tbs_data, &device_cert_tbs_template, sizeof(tbs_data));
 	tbs_data.IssuerCommon = issuer_name;
-	tbs_data.SubjectCommon = subject_name;
+	tbs_data.SubjectCommon = args->device_cert_subject;
 
-	status = BuildTCPSDeviceIdentity((RIOT_ECC_PUBLIC *)
-					 device_id_pub, /* discard const */
-					 (RIOT_ECC_PUBLIC *) /* discard
-								const */
-					 device_id_pub, /* XXX need to change
-							   this to public key
-							   used to validate the
-							   firmware was signed
-							 */
-					 (uint8_t *)fwid, /* discard const */
-					 (uint32_t)fwid_size,
-					 tcps,
-					 sizeof(tcps),
-					 &tcps_len);
+	status = BuildDeviceClaim(device_id_pub,
+				  args->auth_key_pub,
+				  (uint32_t)args->auth_key_pub_size,
+				  args->fwid,
+				  (uint32_t)args->fwid_size,
+				  claim,
+				  sizeof(claim),
+				  &claim_len);
 	if (status != RIOT_SUCCESS) {
 		res = cyres_result_from_riot(status);
 		goto end;
@@ -371,9 +359,9 @@ static cyres_result cyres_gen_device_cert(const char *issuer_name,
 				   (RIOT_ECC_PUBLIC *)
 				   device_id_pub, // discard const
 				   &test_key.pub,
-				   tcps,
-				   tcps_len,
-				   path_len);
+				   claim,
+				   claim_len,
+				   args->root_path_len - 1);
 	if (ret) {
 		res = cyres_result_from_x509(ret);
 		goto end;
@@ -531,12 +519,9 @@ cyres_insert_root_and_device_certs(struct cyres_cert_blob *blob,
 		goto end;
 
 	/* generate device cert */
-	res = cyres_gen_device_cert("Contoso Ltd.",
-				    args->device_cert_subject,
+	res = cyres_gen_device_cert(args,
+				    "Contoso Ltd.",
 				    &device_key_pair->pub,
-				    args->fwid,
-				    args->fwid_size,
-				    args->root_path_len - 1,
 				    &device_cert);
 	if (res)
 		goto end;
@@ -561,12 +546,12 @@ cyres_result cyres_gen_alias_cert(const struct cyres_gen_alias_cert_args *args,
 	cyres_result res;
 	int ret;
 	RIOT_STATUS status;
-	uint32_t tcps_len;
+	uint32_t claim_len;
 	struct cyres_cert *cert = NULL;
 	RIOT_ECC_SIGNATURE tbs_sig;
 	RIOT_X509_TBS_DATA tbs_data;
 	uint8_t digest[RIOT_DIGEST_LENGTH];
-	uint8_t tcps[TCPS_ID_BUF_LEN];
+	uint8_t claim[1024];
 
 	// hash seed data to 256-bit digest
 	status = RiotCrypt_Hash(digest, sizeof(digest),
@@ -613,14 +598,13 @@ cyres_result cyres_gen_alias_cert(const struct cyres_gen_alias_cert_args *args,
 	if (res)
 		return res;
 
-	status = BuildTCPSAliasIdentity((RIOT_ECC_PUBLIC *) /* discard const */
-					args->auth_key_pub,
-					(uint8_t *) /* discard const */
-					args->subject_digest,
-					args->subject_digest_size,
-					tcps,
-					sizeof(tcps),
-					&tcps_len);
+	status = BuildAliasClaim(args->auth_key_pub,
+				 args->auth_key_pub_size,
+				 args->subject_digest,
+				 args->subject_digest_size,
+				 claim,
+				 sizeof(claim),
+				 &claim_len);
 
 	if (status != RIOT_SUCCESS) {
 		res = cyres_result_from_riot(status);
@@ -636,8 +620,8 @@ cyres_result cyres_gen_alias_cert(const struct cyres_gen_alias_cert_args *args,
 				  (uint8_t *)args->subject_digest,
 				  /* discard const */
 				  args->subject_digest_size,
-				  tcps,
-				  tcps_len,
+				  claim,
+				  claim_len,
 				  args->path_len);
 
 	if (ret) {

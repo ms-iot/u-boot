@@ -54,6 +54,8 @@ struct cyres_root_cert_args {
 	size_t identity_size;
 	const uint8_t *fwid;
 	size_t fwid_size;
+	const uint8_t *auth_key_pub;
+	size_t auth_key_pub_size;
 	const char *device_cert_subject;
 	int root_path_len;
 };
@@ -69,7 +71,8 @@ struct cyres_gen_alias_cert_args {
 	size_t seed_data_size;
 	const void *subject_digest;
 	size_t subject_digest_size;
-	const RIOT_ECC_PUBLIC *auth_key_pub;
+	const uint8_t *auth_key_pub;
+	size_t auth_key_pub_size;
 	const char *subject_name;
 	const char *issuer_name;
 	uint32_t path_len;

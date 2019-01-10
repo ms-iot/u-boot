@@ -14,6 +14,7 @@
 #include <asm/types.h>
 #include <asm/macro.h>
 #include <asm/armv8/sec_firmware.h>
+#include <fsl_hab.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 extern void c_runtime_cpu_setup(void);
@@ -423,6 +424,9 @@ int sec_firmware_init(const void *sec_firmware_img,
 {
 	int ret;
 #if defined(CONFIG_SPL_BUILD) && defined(CONFIG_CYRES)
+	struct build_cyres_cert_chain_args args;
+	size_t spl_auth_key_pub_size;
+	u8 spl_auth_key_pub[0x100];
 	u8 fake_auth_key_pub[270] = { 0 }; /* XXX implement when authenticated
 					    boot is available */
 	u8 ppa_optee_digest[SHA256_SUM_LEN];
@@ -442,11 +446,24 @@ int sec_firmware_init(const void *sec_firmware_img,
 #if defined(CONFIG_SPL_BUILD) && defined(CONFIG_CYRES)
 		sha256_finish(&ppa_optee_sha256_ctx, ppa_optee_digest);
 
-		ret = build_cyres_cert_chain("OP-TEE",
-					     ppa_optee_digest,
-					     sizeof(ppa_optee_digest),
-					     fake_auth_key_pub,
-					     sizeof(fake_auth_key_pub));
+		ret = get_spl_auth_key_pub(spl_auth_key_pub,
+					   sizeof(spl_auth_key_pub),
+					   &spl_auth_key_pub_size);
+		if (ret) {
+			/* not a fatal error */
+			spl_auth_key_pub_size = 0;
+		}
+
+		memset(&args, 0, sizeof(args));
+		args.spl_auth_key_pub = spl_auth_key_pub;
+		args.spl_auth_key_pub_size = spl_auth_key_pub_size;
+		args.next_image_name = "OP-TEE";
+		args.next_image_digest = ppa_optee_digest;
+		args.next_image_digest_size = sizeof(ppa_optee_digest);
+		args.next_image_auth_key_pub = fake_auth_key_pub;
+		args.next_image_auth_key_pub_size = sizeof(fake_auth_key_pub);
+
+		ret = build_cyres_cert_chain(&args);
 		if (ret)
 			printf("cyres: failed to build cert chain (0x%x)!\n",
 			       ret);

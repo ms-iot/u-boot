@@ -13,6 +13,7 @@
 
 #ifdef __UBOOT__
 #include <common.h>
+#include <linux/libfdt.h>
 #include <fdt_support.h>
 #endif
 
@@ -21,10 +22,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <string_ext.h>
+#include <libfdt.h>
 #endif
 
 #include <malloc.h>
-#include <libfdt.h>
 
 #include <RiotTarget.h>
 #include <RiotStatus.h>

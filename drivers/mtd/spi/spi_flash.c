@@ -1232,8 +1232,7 @@ int spi_flash_scan(struct spi_flash *flash)
 	 */
 	if (JEDEC_EXT(info) == 0x4d00) {
 		if ((JEDEC_ID(info) != 0x0215) &&
-		    (JEDEC_ID(info) != 0x0216) &&
-		    (JEDEC_ID(info) != 0x0220))
+		    (JEDEC_ID(info) != 0x0216))
 			flash->page_size = 512;
 	}
 	flash->page_size <<= flash->shift;

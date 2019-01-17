@@ -141,6 +141,7 @@
 #endif
 
 /* SATA */
+#ifdef CONFIG_AHCI
 #define CONFIG_LIBATA
 #define CONFIG_SCSI
 #define CONFIG_SCSI_AHCI
@@ -150,6 +151,7 @@
 #define CONFIG_SYS_SCSI_MAX_SCSI_ID			1
 #define CONFIG_SYS_SCSI_MAX_LUN				1
 #define CONFIG_SYS_SCSI_MAX_DEVICE			(CONFIG_SYS_SCSI_MAX_SCSI_ID * CONFIG_SYS_SCSI_MAX_LUN)
+#endif /* AHCI */
 
 /* PCIE */
 #define CONFIG_PCIE1
@@ -173,10 +175,15 @@
 #define CONFIG_MTD_UBI_BEB_LIMIT	20
 
 #ifndef CONFIG_SPL_BUILD
+#ifdef CONFIG_AHCI
+#define BOOT_TARGET_SCSI func(SCSI, scsi, 0)
+#else
+#define BOOT_TARGET_SCSI
+#endif /* CONFIG_AHCI */
 #define BOOT_TARGET_DEVICES(func) \
 	func(MMC, mmc, 0) \
 	func(USB, usb, 0) \
-	func(SCSI, scsi, 0) /*/
+	BOOT_TARGET_SCSI /*\
 	func(USB, usb, 1) \
 	func(UBIFS, ubifs, 0)*/
 #include <config_distro_bootcmd.h>

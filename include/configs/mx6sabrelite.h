@@ -70,11 +70,13 @@
 #endif
 
  /* SATA Configs */
+#ifdef CONFIG_CMD_SATA
 #define CONFIG_SYS_SATA_MAX_DEVICE	1
 #define CONFIG_DWC_AHSATA_PORT_ID	0
 #define CONFIG_DWC_AHSATA_BASE_ADDR	SATA_ARB_BASE_ADDR
 #define CONFIG_LBA48
 #define CONFIG_DRIVE_SATA "sata "
+#endif
 
  /* Ethernet Configs */
 #define CONFIG_PHYLIB
@@ -120,13 +122,6 @@
 #define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 
 #ifndef CONFIG_SPL_BUILD
-#ifdef CONFIG_UEFI_BOOT
-#include <config_uefi_bootcmd.h>
-
-#define CONFIG_EXTRA_ENV_SETTINGS \
-	"mmcdev=0\0" \
-	BOOTENV
-#else
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"script=boot.scr\0" \
 	"image=zImage\0" \
@@ -208,6 +203,7 @@
 			"if test $fdt_file = undefined; then " \
 				"echo WARNING: Could not determine dtb to use; fi; \0"
 
+#if !defined(CONFIG_BOOTCOMMAND)
 #define CONFIG_BOOTCOMMAND \
 	   "run findfdt; " \
 	   "mmc dev ${mmcdev}; if mmc rescan; then " \
@@ -220,7 +216,7 @@
 			   "fi; " \
 		   "fi; " \
 	   "else run netboot; fi"
-#endif
+#endif /* !defined(CONFIG_BOOTCOMMAND) */
 #else
 #define CONFIG_EXTRA_ENV_SETTINGS
 #endif /* CONFIG_SPL_BUILD */
@@ -229,9 +225,7 @@
 #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 500 * SZ_1M)
 
 /* Physical Memory Map */
-#define PHYS_SDRAM			MMDC0_ARB_BASE_ADDR
-
-#define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
+#define CONFIG_SYS_SDRAM_BASE		MMDC0_ARB_BASE_ADDR
 #define CONFIG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
 #define CONFIG_SYS_INIT_RAM_SIZE	IRAM_SIZE
 

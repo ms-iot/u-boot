@@ -319,9 +319,13 @@ config TARGET_MX6SABRESD
 
 config TARGET_MX6SABRELITE
 	bool "mx6sabrelite"
-	select MX6QDL
+	select BOARD_EARLY_INIT_F
 	select BOARD_LATE_INIT
+	select DM
+	select DM_THERMAL
+	select MX6QDL
 	select SUPPORT_SPL
+	imply CMD_DM
 
 config TARGET_MX6SLEVK
 	bool "mx6slevk"

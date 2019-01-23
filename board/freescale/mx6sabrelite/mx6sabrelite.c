@@ -812,8 +812,8 @@ int board_early_init_f(void)
 	SETUP_IOMUX_PADS(init_pads);
 	SETUP_IOMUX_PADS(button_pads);
 
-#if defined(CONFIG_VIDEO_IPUV3) && !defined(CONFIG_SPL_BUILD)
-	setup_display();
+#ifdef CONFIG_CMD_SATA
+	setup_sata();
 #endif
 	return 0;
 }
@@ -834,12 +834,15 @@ int board_init(void)
 	SETUP_IOMUX_PADS(misc_pads);
 
 	/* address of boot parameters */
-	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
+	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
+
+#if defined(CONFIG_VIDEO_IPUV3) && !defined(CONFIG_SPL_BUILD)
+	setup_display();
+#endif
 
 	setup_i2c(0, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info0);
 	setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info1);
 	setup_i2c(2, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info2);
-	setup_sata();
 	return 0;
 }
 

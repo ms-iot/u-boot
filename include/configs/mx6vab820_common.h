@@ -57,6 +57,23 @@
 #endif
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"uefi_addr=0x20A20000\0" \
+	"uefi_file=uefi.fit\0" \
+	"loaduefi=fatload mmc ${mmcdev}:2 ${uefi_addr} ${uefi_file}\0" \
+	"bootuefi=echo Booting from ${mmcname} ...; run uefi_globalpage; bootm ${uefi_addr}\0" \
+	"bootcmd_main=" \
+		"if mmc dev ${mmcdev} && mmc rescan; then " \
+			"setenv loadaddr ${uefi_addr}; " \
+			"if run loadbootscript; then " \
+				"run bootscript; " \
+			"elif run loaduefi; then " \
+				"run bootuefi; " \
+			"fi; " \
+		"fi\0" \
+	"uefi_globalpage=globalpage init 0x10817000; globalpage add ethaddr;\0" \
+	"bootcmd_sd=setenv mmcdev 0; setenv mmcname sdcard; run bootcmd_main;\0" \
+	"bootcmd_mmc=setenv mmcdev 1; setenv mmcname mmc; run bootcmd_main;\0" \
+	"bootcmd_uefi=if run bootcmd_sd; then; else run bootcmd_mmc; fi\0" \
 	"script=boot.scr\0" \
 	"image=zImage\0" \
 	"fdt_file=undefined\0" \
@@ -70,7 +87,7 @@
 	"dfu_alt_info=spl raw 0x400\0" \
 	"fdt_high=0xffffffff\0"	  \
 	"initrd_high=0xffffffff\0" \
-	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
+	"mmcdev=0\0" \
 	"mmcpart=1\0" \
 	"finduuid=part uuid mmc ${mmcdev}:2 uuid\0" \
 	"update_sd_firmware=" \
@@ -91,8 +108,8 @@
 		"root=PARTUUID=${uuid} rootwait rw\0" \
 	"loadbootscript=" \
 		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
-	"bootscript=echo Running bootscript from mmc ...; " \
-		"source\0" \
+	"bootscript=echo Running bootscript from ${mmcname} ...; " \
+		"source ${loadaddr}\0" \
 	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
 	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
 	"mmcboot=echo Booting from mmc ...; " \

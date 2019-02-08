@@ -1,12 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015-2016 Freescale Semiconductor, Inc.
  * Copyright 2017 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
-#include <pfe_eth/pfe_eth.h>
-#include <pfe_eth/pfe_firmware.h>
+#include <net/pfe_eth/pfe_eth.h>
+#include <net/pfe_eth/pfe_firmware.h>
 
 static struct tx_desc_s *g_tx_desc;
 static struct rx_desc_s *g_rx_desc;
@@ -25,11 +24,11 @@ static struct rx_desc_s *g_rx_desc;
  *
  * @return -1 if no packet, else return length of packet.
  */
-int pfe_recv(unsigned int *pkt_ptr, int *phy_port)
+int pfe_recv(uchar **pkt_ptr, int *phy_port)
 {
 	struct rx_desc_s *rx_desc = g_rx_desc;
 	struct buf_desc *bd;
-	int len = -1;
+	int len = 0;
 
 	struct hif_header_s *hif_header;
 
@@ -44,10 +43,9 @@ int pfe_recv(unsigned int *pkt_ptr, int *phy_port)
 	hif_header = (struct hif_header_s *)DDR_PFE_TO_VIRT(readl(&bd->data));
 
 	/* Get the receive port info from the packet */
-	debug(
-		"Pkt recv'd: Pkt ptr(%p), len(%d), gemac_port(%d) status(%08x)\n",
-		hif_header, len, hif_header->port_no, readl(&bd->status));
-
+	debug("Pkt received:");
+	debug(" Pkt ptr(%p), len(%d), gemac_port(%d) status(%08x)\n",
+	      hif_header, len, hif_header->port_no, readl(&bd->status));
 #ifdef DEBUG
 	{
 		int i;
@@ -62,7 +60,7 @@ int pfe_recv(unsigned int *pkt_ptr, int *phy_port)
 	}
 #endif
 
-	*pkt_ptr = (unsigned long)(hif_header + 1);
+	*pkt_ptr = (uchar *)(hif_header + 1);
 	*phy_port = hif_header->port_no;
 	len -= sizeof(struct hif_header_s);
 
@@ -75,7 +73,7 @@ int pfe_recv(unsigned int *pkt_ptr, int *phy_port)
  * locations
  * if success, moves the rx_to_read to next location.
  */
-void pfe_rx_done(void)
+int pfe_eth_free_pkt(struct udevice *dev, uchar *packet, int length)
 {
 	struct rx_desc_s *rx_desc = g_rx_desc;
 	struct buf_desc *bd;
@@ -105,6 +103,8 @@ void pfe_rx_done(void)
 			       & (rx_desc->rx_ring_size - 1);
 
 	debug("Rx next pkt location: %d\n", rx_desc->rx_to_read);
+
+	return 0;
 }
 
 /*
@@ -275,7 +275,7 @@ void hif_rx_desc_disable(void)
 /*
  * HIF Rx Desc initialization function.
  */
-static int hif_rx_desc_init(struct pfe *pfe)
+static int hif_rx_desc_init(struct pfe_ddr_address *pfe_addr)
 {
 	u32 ctrl;
 	struct buf_desc *bd_va;
@@ -293,7 +293,7 @@ static int hif_rx_desc_init(struct pfe *pfe)
 	rx_desc = (struct rx_desc_s *)malloc(sizeof(struct rx_desc_s));
 	if (!rx_desc) {
 		printf("%s: Memory allocation failure\n", __func__);
-		return -1;
+		return -ENOMEM;
 	}
 	memset(rx_desc, 0, sizeof(struct rx_desc_s));
 
@@ -301,14 +301,15 @@ static int hif_rx_desc_init(struct pfe *pfe)
 	rx_desc->rx_ring_size = HIF_RX_DESC_NT;
 
 	/* NOTE: must be 64bit aligned  */
-	bd_va = (struct buf_desc *)(pfe->ddr_pfe_baseaddr + RX_BD_BASEADDR);
-	bd_pa = (struct buf_desc *)(pfe->ddr_pfe_phys_baseaddr
+	bd_va = (struct buf_desc *)(pfe_addr->ddr_pfe_baseaddr
+		 + RX_BD_BASEADDR);
+	bd_pa = (struct buf_desc *)(pfe_addr->ddr_pfe_phys_baseaddr
 				    + RX_BD_BASEADDR);
 
 	rx_desc->rx_base = bd_va;
 	rx_desc->rx_base_pa = (unsigned long)bd_pa;
 
-	rx_buf_pa = pfe->ddr_pfe_phys_baseaddr + HIF_RX_PKT_DDR_BASEADDR;
+	rx_buf_pa = pfe_addr->ddr_pfe_phys_baseaddr + HIF_RX_PKT_DDR_BASEADDR;
 
 	debug("%s: Rx desc base: %p, base_pa: %08x, desc_count: %d\n",
 	      __func__, rx_desc->rx_base, rx_desc->rx_base_pa,
@@ -363,7 +364,7 @@ static inline void hif_tx_desc_dump(void)
 /*
  * HIF Tx descriptor initialization function.
  */
-static int hif_tx_desc_init(struct pfe *pfe)
+static int hif_tx_desc_init(struct pfe_ddr_address *pfe_addr)
 {
 	struct buf_desc *bd_va;
 	struct buf_desc *bd_pa;
@@ -381,7 +382,7 @@ static int hif_tx_desc_init(struct pfe *pfe)
 	if (!tx_desc) {
 		printf("%s:%d:Memory allocation failure\n", __func__,
 		       __LINE__);
-		return -1;
+		return -ENOMEM;
 	}
 	memset(tx_desc, 0, sizeof(struct tx_desc_s));
 
@@ -389,8 +390,9 @@ static int hif_tx_desc_init(struct pfe *pfe)
 	tx_desc->tx_ring_size = HIF_TX_DESC_NT;
 
 	/* NOTE: must be 64bit aligned  */
-	bd_va = (struct buf_desc *)(pfe->ddr_pfe_baseaddr + TX_BD_BASEADDR);
-	bd_pa = (struct buf_desc *)(pfe->ddr_pfe_phys_baseaddr
+	bd_va = (struct buf_desc *)(pfe_addr->ddr_pfe_baseaddr
+		 + TX_BD_BASEADDR);
+	bd_pa = (struct buf_desc *)(pfe_addr->ddr_pfe_phys_baseaddr
 				    + TX_BD_BASEADDR);
 
 	tx_desc->tx_base_pa = (unsigned long)bd_pa;
@@ -402,7 +404,7 @@ static int hif_tx_desc_init(struct pfe *pfe)
 
 	memset(bd_va, 0, sizeof(struct buf_desc) * tx_desc->tx_ring_size);
 
-	tx_buf_pa = pfe->ddr_pfe_phys_baseaddr + HIF_TX_PKT_DDR_BASEADDR;
+	tx_buf_pa = pfe_addr->ddr_pfe_phys_baseaddr + HIF_TX_PKT_DDR_BASEADDR;
 
 	for (i = 0; i < tx_desc->tx_ring_size; i++) {
 		writel((unsigned long)(bd_pa + 1), &bd_va->next);
@@ -423,10 +425,10 @@ static int hif_tx_desc_init(struct pfe *pfe)
 /*
  * PFE/Class initialization.
  */
-static void pfe_class_init(struct pfe *pfe)
+static void pfe_class_init(struct pfe_ddr_address *pfe_addr)
 {
 	struct class_cfg class_cfg = {
-		.route_table_baseaddr = pfe->ddr_pfe_phys_baseaddr +
+		.route_table_baseaddr = pfe_addr->ddr_pfe_phys_baseaddr +
 					ROUTE_TABLE_BASEADDR,
 		.route_table_hash_bits = ROUTE_TABLE_HASH_BITS,
 	};
@@ -439,10 +441,11 @@ static void pfe_class_init(struct pfe *pfe)
 /*
  * PFE/TMU initialization.
  */
-static void pfe_tmu_init(struct pfe *pfe)
+static void pfe_tmu_init(struct pfe_ddr_address *pfe_addr)
 {
 	struct tmu_cfg tmu_cfg = {
-		.llm_base_addr = pfe->ddr_pfe_phys_baseaddr + TMU_LLM_BASEADDR,
+		.llm_base_addr = pfe_addr->ddr_pfe_phys_baseaddr
+				 + TMU_LLM_BASEADDR,
 		.llm_queue_len = TMU_LLM_QUEUE_LEN,
 	};
 
@@ -454,7 +457,7 @@ static void pfe_tmu_init(struct pfe *pfe)
 /*
  * PFE/BMU (both BMU1 & BMU2) initialization.
  */
-static void pfe_bmu_init(struct pfe *pfe)
+static void pfe_bmu_init(struct pfe_ddr_address *pfe_addr)
 {
 	struct bmu_cfg bmu1_cfg = {
 		.baseaddr = CBUS_VIRT_TO_PFE(LMEM_BASE_ADDR +
@@ -464,7 +467,7 @@ static void pfe_bmu_init(struct pfe *pfe)
 	};
 
 	struct bmu_cfg bmu2_cfg = {
-		.baseaddr = pfe->ddr_pfe_phys_baseaddr + BMU2_DDR_BASEADDR,
+		.baseaddr = pfe_addr->ddr_pfe_phys_baseaddr + BMU2_DDR_BASEADDR,
 		.count = BMU2_BUF_COUNT,
 		.size = BMU2_BUF_SIZE,
 	};
@@ -480,7 +483,7 @@ static void pfe_bmu_init(struct pfe *pfe)
  * PFE/GPI initialization function.
  *  - egpi1, egpi2, egpi3, hgpi
  */
-static void pfe_gpi_init(struct pfe *pfe)
+static void pfe_gpi_init(struct pfe_ddr_address *pfe_addr)
 {
 	struct gpi_cfg egpi1_cfg = {
 		.lmem_rtry_cnt = EGPI1_LMEM_RTRY_CNT,
@@ -513,13 +516,19 @@ static void pfe_gpi_init(struct pfe *pfe)
 /*
  * PFE/HIF initialization function.
  */
-static void pfe_hif_init(struct pfe *pfe)
+static int pfe_hif_init(struct pfe_ddr_address *pfe_addr)
 {
+	int ret = 0;
+
 	hif_tx_disable();
 	hif_rx_disable();
 
-	hif_tx_desc_init(pfe);
-	hif_rx_desc_init(pfe);
+	ret = hif_tx_desc_init(pfe_addr);
+	if (ret)
+		return ret;
+	ret = hif_rx_desc_init(pfe_addr);
+	if (ret)
+		return ret;
 
 	hif_init();
 
@@ -530,6 +539,7 @@ static void pfe_hif_init(struct pfe *pfe)
 	hif_tx_desc_dump();
 
 	debug("HIF init complete\n");
+	return ret;
 }
 
 /*
@@ -546,8 +556,10 @@ static void pfe_hif_init(struct pfe *pfe)
  *
  * @return 0, on success.
  */
-static int pfe_hw_init(struct pfe *pfe)
+static int pfe_hw_init(struct pfe_ddr_address *pfe_addr)
 {
+	int ret = 0;
+
 	debug("%s: start\n", __func__);
 
 	writel(0x3, CLASS_PE_SYS_CLK_RATIO);
@@ -555,15 +567,17 @@ static int pfe_hw_init(struct pfe *pfe)
 	writel(0x3, UTIL_PE_SYS_CLK_RATIO);
 	udelay(10);
 
-	pfe_class_init(pfe);
+	pfe_class_init(pfe_addr);
 
-	pfe_tmu_init(pfe);
+	pfe_tmu_init(pfe_addr);
 
-	pfe_bmu_init(pfe);
+	pfe_bmu_init(pfe_addr);
 
-	pfe_gpi_init(pfe);
+	pfe_gpi_init(pfe_addr);
 
-	pfe_hif_init(pfe);
+	ret = pfe_hif_init(pfe_addr);
+	if (ret)
+		return ret;
 
 	bmu_enable(BMU1_BASE_ADDR);
 	debug("bmu1 enabled\n");
@@ -573,11 +587,11 @@ static int pfe_hw_init(struct pfe *pfe)
 
 	debug("%s: done\n", __func__);
 
-	return 0;
+	return ret;
 }
 
 /*
- * PFE probe function.
+ * PFE driver init function.
  * - Initializes pfe_lib
  * - pfe hw init
  * - fw loading and enables PEs
@@ -585,19 +599,15 @@ static int pfe_hw_init(struct pfe *pfe)
  *
  * @param[in] pfe  Pointer the pfe control block
  */
-int pfe_probe(struct pfe *pfe)
+int pfe_drv_init(struct pfe_ddr_address  *pfe_addr)
 {
-	static int init_done;
+	int ret = 0;
 
-	if (init_done)
-		return 0;
+	pfe_lib_init();
 
-	debug("ddr_pfe_baseaddr: %p, ddr_pfe_phys_baseaddr: %08x\n",
-	      pfe->ddr_pfe_baseaddr, (u32)pfe->ddr_pfe_phys_baseaddr);
-
-	pfe_lib_init(pfe->ddr_pfe_baseaddr, pfe->ddr_pfe_phys_baseaddr);
-
-	pfe_hw_init(pfe);
+	ret = pfe_hw_init(pfe_addr);
+	if (ret)
+		return ret;
 
 	/* Load the class,TM, Util fw.
 	 * By now pfe is:
@@ -607,20 +617,18 @@ int pfe_probe(struct pfe *pfe)
 	/* It loads default inbuilt sbl firmware */
 	pfe_firmware_init();
 
-	init_done = 1;
-
-	return 0;
+	return ret;
 }
 
 /*
  * PFE remove function
- *  - stopes PEs
+ *  - stops PEs
  *  - frees tx/rx descriptor resources
  *  - should be called once.
  *
  * @param[in] pfe Pointer to pfe control block.
  */
-int pfe_remove(struct pfe *pfe)
+int pfe_eth_remove(struct udevice *dev)
 {
 	if (g_tx_desc)
 		free(g_tx_desc);

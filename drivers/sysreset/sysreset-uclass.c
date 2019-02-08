@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -23,6 +22,16 @@ int sysreset_request(struct udevice *dev, enum sysreset_t type)
 		return -ENOSYS;
 
 	return ops->request(dev, type);
+}
+
+int sysreset_get_status(struct udevice *dev, char *buf, int size)
+{
+	struct sysreset_ops *ops = sysreset_get_ops(dev);
+
+	if (!ops->get_status)
+		return -ENOSYS;
+
+	return ops->get_status(dev, buf, size);
 }
 
 int sysreset_walk(enum sysreset_t type)
@@ -70,12 +79,30 @@ void reset_cpu(ulong addr)
 
 int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	sysreset_walk_halt(SYSRESET_WARM);
+	printf("resetting ...\n");
 
+	sysreset_walk_halt(SYSRESET_COLD);
+
+	return 0;
+}
+
+static int sysreset_post_bind(struct udevice *dev)
+{
+#if defined(CONFIG_NEEDS_MANUAL_RELOC)
+	struct sysreset_ops *ops = sysreset_get_ops(dev);
+	static int reloc_done;
+
+	if (!reloc_done) {
+		if (ops->request)
+			ops->request += gd->reloc_off;
+		reloc_done++;
+	}
+#endif
 	return 0;
 }
 
 UCLASS_DRIVER(sysreset) = {
 	.id		= UCLASS_SYSRESET,
 	.name		= "sysreset",
+	.post_bind	= sysreset_post_bind,
 };

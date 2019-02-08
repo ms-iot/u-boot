@@ -1,18 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  *  EFI application network access support
  *
  *  Copyright (c) 2016 Alexander Graf
- *
- *  SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
 #include <efi_loader.h>
-#include <inttypes.h>
 #include <lcd.h>
 #include <malloc.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 static const efi_guid_t efi_net_guid = EFI_SIMPLE_NETWORK_GUID;
 static const efi_guid_t efi_pxe_guid = EFI_PXE_GUID;
@@ -54,14 +50,46 @@ static efi_status_t EFIAPI efi_net_stop(struct efi_simple_network *this)
 	return EFI_EXIT(EFI_SUCCESS);
 }
 
+/*
+ * Initialize network adapter and allocate transmit and receive buffers.
+ *
+ * This function implements the Initialize service of the
+ * EFI_SIMPLE_NETWORK_PROTOCOL. See the Unified Extensible Firmware Interface
+ * (UEFI) specification for details.
+ *
+ * @this:	pointer to the protocol instance
+ * @extra_rx:	extra receive buffer to be allocated
+ * @extra_tx:	extra transmit buffer to be allocated
+ * @return:	status code
+ */
 static efi_status_t EFIAPI efi_net_initialize(struct efi_simple_network *this,
 					      ulong extra_rx, ulong extra_tx)
 {
+	int ret;
+	efi_status_t r = EFI_SUCCESS;
+
 	EFI_ENTRY("%p, %lx, %lx", this, extra_rx, extra_tx);
 
-	eth_init();
+	if (!this) {
+		r = EFI_INVALID_PARAMETER;
+		goto error;
+	}
 
-	return EFI_EXIT(EFI_SUCCESS);
+	/* Setup packet buffers */
+	net_init();
+	/* Disable hardware and put it into the reset state */
+	eth_halt();
+	/* Set current device according to environment variables */
+	eth_set_current();
+	/* Get hardware ready for send and receive operations */
+	ret = eth_init();
+	if (ret < 0) {
+		eth_halt();
+		r = EFI_DEVICE_ERROR;
+	}
+
+error:
+	return EFI_EXIT(r);
 }
 
 static efi_status_t EFIAPI efi_net_reset(struct efi_simple_network *this,
@@ -280,28 +308,39 @@ static void EFIAPI efi_network_timer_notify(struct efi_event *event,
 }
 
 /* This gets called from do_bootefi_exec(). */
-int efi_net_register(void)
+efi_status_t efi_net_register(void)
 {
 	struct efi_net_obj *netobj;
 	efi_status_t r;
 
 	if (!eth_get_dev()) {
 		/* No eth device active, don't expose any */
-		return 0;
+		return EFI_SUCCESS;
 	}
 
 	/* We only expose the "active" eth device, so one is enough */
 	netobj = calloc(1, sizeof(*netobj));
+	if (!netobj) {
+		printf("ERROR: Out of memory\n");
+		return EFI_OUT_OF_RESOURCES;
+	}
+
+	/* Hook net up to the device list */
+	efi_add_handle(&netobj->parent);
 
 	/* Fill in object data */
-	netobj->parent.protocols[0].guid = &efi_net_guid;
-	netobj->parent.protocols[0].protocol_interface = &netobj->net;
-	netobj->parent.protocols[1].guid = &efi_guid_device_path;
-	netobj->parent.protocols[1].protocol_interface =
-		efi_dp_from_eth();
-	netobj->parent.protocols[2].guid = &efi_pxe_guid;
-	netobj->parent.protocols[2].protocol_interface = &netobj->pxe;
-	netobj->parent.handle = &netobj->net;
+	r = efi_add_protocol(netobj->parent.handle, &efi_net_guid,
+			     &netobj->net);
+	if (r != EFI_SUCCESS)
+		goto failure_to_add_protocol;
+	r = efi_add_protocol(netobj->parent.handle, &efi_guid_device_path,
+			     efi_dp_from_eth());
+	if (r != EFI_SUCCESS)
+		goto failure_to_add_protocol;
+	r = efi_add_protocol(netobj->parent.handle, &efi_pxe_guid,
+			     &netobj->pxe);
+	if (r != EFI_SUCCESS)
+		goto failure_to_add_protocol;
 	netobj->net.revision = EFI_SIMPLE_NETWORK_PROTOCOL_REVISION;
 	netobj->net.start = efi_net_start;
 	netobj->net.stop = efi_net_stop;
@@ -321,19 +360,17 @@ int efi_net_register(void)
 	memcpy(netobj->net_mode.current_address.mac_addr, eth_get_ethaddr(), 6);
 	netobj->net_mode.hwaddr_size = ARP_HLEN;
 	netobj->net_mode.max_packet_size = PKTSIZE;
+	netobj->net_mode.if_type = ARP_ETHER;
 
 	netobj->pxe.mode = &netobj->pxe_mode;
 	if (dhcp_ack)
 		netobj->pxe_mode.dhcp_ack = *dhcp_ack;
 
-	/* Hook net up to the device list */
-	list_add_tail(&netobj->parent.link, &efi_obj_list);
-
 	/*
 	 * Create WaitForPacket event.
 	 */
 	r = efi_create_event(EVT_NOTIFY_WAIT, TPL_CALLBACK,
-			     efi_network_timer_notify, NULL,
+			     efi_network_timer_notify, NULL, NULL,
 			     &wait_for_packet);
 	if (r != EFI_SUCCESS) {
 		printf("ERROR: Failed to register network event\n");
@@ -345,9 +382,11 @@ int efi_net_register(void)
 	 *
 	 * The notification function is used to check if a new network packet
 	 * has been received.
+	 *
+	 * iPXE is running at TPL_CALLBACK most of the time. Use a higher TPL.
 	 */
-	r = efi_create_event(EVT_TIMER | EVT_NOTIFY_SIGNAL, TPL_CALLBACK,
-			     efi_network_timer_notify, NULL,
+	r = efi_create_event(EVT_TIMER | EVT_NOTIFY_SIGNAL, TPL_NOTIFY,
+			     efi_network_timer_notify, NULL, NULL,
 			     &network_timer_event);
 	if (r != EFI_SUCCESS) {
 		printf("ERROR: Failed to register network event\n");
@@ -360,5 +399,8 @@ int efi_net_register(void)
 		return r;
 	}
 
-	return 0;
+	return EFI_SUCCESS;
+failure_to_add_protocol:
+	printf("ERROR: Failure to add protocol\n");
+	return r;
 }

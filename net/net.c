@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  *	Copied from Linux Monitor (LiMon) - Networking.
  *
@@ -6,7 +7,6 @@
  *	Copyright 2000 Roland Borde
  *	Copyright 2000 Paolo Scaffardi
  *	Copyright 2000-2002 Wolfgang Denk, wd@denx.de
- *	SPDX-License-Identifier:	GPL-2.0
  */
 
 /*
@@ -78,6 +78,12 @@
  *			- own IP address
  *	We want:	- network time
  *	Next step:	none
+ *
+ * WOL:
+ *
+ *	Prerequisites:	- own ethernet address
+ *	We want:	- magic packet or timeout
+ *	Next step:	none
  */
 
 
@@ -87,6 +93,7 @@
 #include <environment.h>
 #include <errno.h>
 #include <net.h>
+#include <net/fastboot.h>
 #include <net/tftp.h>
 #if defined(CONFIG_LED_STATUS)
 #include <miiphy.h>
@@ -107,8 +114,9 @@
 #if defined(CONFIG_CMD_SNTP)
 #include "sntp.h"
 #endif
-
-DECLARE_GLOBAL_DATA_PTR;
+#if defined(CONFIG_CMD_WOL)
+#include "wol.h"
+#endif
 
 /** BOOTP EXTENTIONS **/
 
@@ -166,6 +174,8 @@ ushort		net_native_vlan = 0xFFFF;
 
 /* Boot File name */
 char net_boot_file_name[1024];
+/* Indicates whether the file name was specified on the command line */
+bool net_boot_file_name_explicit;
 /* The actual transferred size of the bootfile (in bytes) */
 u32 net_boot_file_size;
 /* Boot file size in blocks as reported by the DHCP server */
@@ -205,26 +215,6 @@ static int net_try_count;
 int __maybe_unused net_busy_flag;
 
 /**********************************************************************/
-
-static int on_bootfile(const char *name, const char *value, enum env_op op,
-	int flags)
-{
-	if (flags & H_PROGRAMMATIC)
-		return 0;
-
-	switch (op) {
-	case env_op_create:
-	case env_op_overwrite:
-		copy_filename(net_boot_file_name, value,
-			      sizeof(net_boot_file_name));
-		break;
-	default:
-		break;
-	}
-
-	return 0;
-}
-U_BOOT_ENV_CALLBACK(bootfile, on_bootfile);
 
 static int on_ipaddr(const char *name, const char *value, enum env_op op,
 	int flags)
@@ -322,6 +312,16 @@ void net_auto_load(void)
 	const char *s = env_get("autoload");
 
 	if (s != NULL && strcmp(s, "NFS") == 0) {
+		if (net_check_prereq(NFS)) {
+/* We aren't expecting to get a serverip, so just accept the assigned IP */
+#ifdef CONFIG_BOOTP_SERVERIP
+			net_set_state(NETLOOP_SUCCESS);
+#else
+			printf("Cannot autoload with NFS\n");
+			net_set_state(NETLOOP_FAIL);
+#endif
+			return;
+		}
 		/*
 		 * Use NFS to load the bootfile.
 		 */
@@ -335,6 +335,16 @@ void net_auto_load(void)
 		 * Do not use TFTP to load the bootfile.
 		 */
 		net_set_state(NETLOOP_SUCCESS);
+		return;
+	}
+	if (net_check_prereq(TFTPGET)) {
+/* We aren't expecting to get a serverip, so just accept the assigned IP */
+#ifdef CONFIG_BOOTP_SERVERIP
+		net_set_state(NETLOOP_SUCCESS);
+#else
+		printf("Cannot autoload with TFTPGET\n");
+		net_set_state(NETLOOP_FAIL);
+#endif
 		return;
 	}
 	tftp_start(TFTPGET);
@@ -394,6 +404,7 @@ void net_init(void)
 int net_loop(enum proto_t protocol)
 {
 	int ret = -EINVAL;
+	enum net_loop_state prev_net_state = net_state;
 
 	net_restarted = 0;
 	net_dev_exists = 0;
@@ -431,6 +442,7 @@ restart:
 	case 1:
 		/* network not configured */
 		eth_halt();
+		net_set_state(prev_net_state);
 		return -ENODEV;
 
 	case 2:
@@ -451,6 +463,11 @@ restart:
 #ifdef CONFIG_CMD_TFTPSRV
 		case TFTPSRV:
 			tftp_start_server();
+			break;
+#endif
+#ifdef CONFIG_UDP_FUNCTION_FASTBOOT
+		case FASTBOOT:
+			fastboot_start_server();
 			break;
 #endif
 #if defined(CONFIG_CMD_DHCP)
@@ -507,6 +524,11 @@ restart:
 #if defined(CONFIG_CMD_LINK_LOCAL)
 		case LINKLOCAL:
 			link_local_start();
+			break;
+#endif
+#if defined(CONFIG_CMD_WOL)
+		case WOL:
+			wol_start();
 			break;
 #endif
 		default:
@@ -651,6 +673,7 @@ done:
 	net_set_udp_handler(NULL);
 	net_set_icmp_handler(NULL);
 #endif
+	net_set_state(prev_net_state);
 	return ret;
 }
 
@@ -683,7 +706,7 @@ int net_start_again(void)
 		retry_forever = 0;
 	}
 
-	if ((!retry_forever) && (net_try_count >= retrycnt)) {
+	if ((!retry_forever) && (net_try_count > retrycnt)) {
 		eth_halt();
 		net_set_state(NETLOOP_FAIL);
 		/*
@@ -1274,6 +1297,11 @@ void net_process_received_packet(uchar *in_packet, int len)
 				      ntohs(ip->udp_src),
 				      ntohs(ip->udp_len) - UDP_HDR_SIZE);
 		break;
+#ifdef CONFIG_CMD_WOL
+	case PROT_WOL:
+		wol_receive(ip, len);
+		break;
+#endif
 	}
 }
 
@@ -1313,7 +1341,7 @@ static int net_check_prereq(enum proto_t protocol)
 		/* Fall through */
 	case TFTPGET:
 	case TFTPPUT:
-		if (net_server_ip.s_addr == 0) {
+		if (net_server_ip.s_addr == 0 && !is_serverip_in_cmd()) {
 			puts("*** ERROR: `serverip' not set\n");
 			return 1;
 		}
@@ -1324,6 +1352,7 @@ common:
 		/* Fall through */
 
 	case NETCONS:
+	case FASTBOOT:
 	case TFTPSRV:
 		if (net_ip.s_addr == 0) {
 			puts("*** ERROR: `ipaddr' not set\n");
@@ -1473,14 +1502,39 @@ void net_set_udp_header(uchar *pkt, struct in_addr dest, int dport, int sport,
 
 void copy_filename(char *dst, const char *src, int size)
 {
-	if (*src && (*src == '"')) {
+	if (src && *src && (*src == '"')) {
 		++src;
 		--size;
 	}
 
-	while ((--size > 0) && *src && (*src != '"'))
+	while ((--size > 0) && src && *src && (*src != '"'))
 		*dst++ = *src++;
 	*dst = '\0';
+}
+
+int is_serverip_in_cmd(void)
+{
+	return !!strchr(net_boot_file_name, ':');
+}
+
+int net_parse_bootfile(struct in_addr *ipaddr, char *filename, int max_len)
+{
+	char *colon;
+
+	if (net_boot_file_name[0] == '\0')
+		return 0;
+
+	colon = strchr(net_boot_file_name, ':');
+	if (colon) {
+		if (ipaddr)
+			*ipaddr = string_to_ip(net_boot_file_name);
+		strncpy(filename, colon + 1, max_len);
+	} else {
+		strncpy(filename, net_boot_file_name, max_len);
+	}
+	filename[max_len - 1] = '\0';
+
+	return 1;
 }
 
 #if	defined(CONFIG_CMD_NFS)		|| \

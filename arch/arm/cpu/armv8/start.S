@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2013
  * David Feng <fenghua@phytium.com.cn>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm-offsets.h>
@@ -19,7 +18,9 @@
 
 .globl	_start
 _start:
-#ifdef CONFIG_ENABLE_ARM_SOC_BOOT0_HOOK
+#if defined(LINUX_KERNEL_IMAGE_HEADER)
+#include <asm/boot0-linux-kernel-header.h>
+#elif defined(CONFIG_ENABLE_ARM_SOC_BOOT0_HOOK)
 /*
  * Various SoCs need something special and SoC-specific up front in
  * order to boot, allow them to set that in their boot0.h file and then
@@ -57,16 +58,51 @@ reset:
 .globl	save_boot_params_ret
 save_boot_params_ret:
 
+#if CONFIG_POSITION_INDEPENDENT
+	/*
+	 * Fix .rela.dyn relocations. This allows U-Boot to be loaded to and
+	 * executed at a different address than it was linked at.
+	 */
+pie_fixup:
+	adr	x0, _start		/* x0 <- Runtime value of _start */
+	ldr	x1, _TEXT_BASE		/* x1 <- Linked value of _start */
+	sub	x9, x0, x1		/* x9 <- Run-vs-link offset */
+	adr	x2, __rel_dyn_start	/* x2 <- Runtime &__rel_dyn_start */
+	adr	x3, __rel_dyn_end	/* x3 <- Runtime &__rel_dyn_end */
+pie_fix_loop:
+	ldp	x0, x1, [x2], #16	/* (x0, x1) <- (Link location, fixup) */
+	ldr	x4, [x2], #8		/* x4 <- addend */
+	cmp	w1, #1027		/* relative fixup? */
+	bne	pie_skip_reloc
+	/* relative fix: store addend plus offset at dest location */
+	add	x0, x0, x9
+	add	x4, x4, x9
+	str	x4, [x0]
+pie_skip_reloc:
+	cmp	x2, x3
+	b.lo	pie_fix_loop
+pie_fixup_done:
+#endif
+
 #ifdef CONFIG_SYS_RESET_SCTRL
 	bl reset_sctrl
+#endif
+
+#if defined(CONFIG_ARMV8__SPL_EXCEPTION_VECTORS) || !defined(CONFIG_SPL_BUILD)
+.macro	set_vbar, regname, reg
+	msr	\regname, \reg
+.endm
+	adr	x0, vectors
+#else
+.macro	set_vbar, regname, reg
+.endm
 #endif
 	/*
 	 * Could be EL3/EL2/EL1, Initial State:
 	 * Little Endian, MMU Disabled, i/dCache Disabled
 	 */
-	adr	x0, vectors
 	switch_el x1, 3f, 2f, 1f
-3:	msr	vbar_el3, x0
+3:	set_vbar vbar_el3, x0
 	mrs	x0, scr_el3
 	orr	x0, x0, #0xf			/* SCR_EL3.NS|IRQ|FIQ|EA */
 	msr	scr_el3, x0
@@ -76,11 +112,11 @@ save_boot_params_ret:
 	msr	cntfrq_el0, x0			/* Initialize CNTFRQ */
 #endif
 	b	0f
-2:	msr	vbar_el2, x0
+2:	set_vbar	vbar_el2, x0
 	mov	x0, #0x33ff
 	msr	cptr_el2, x0			/* Enable FP/SIMD */
 	b	0f
-1:	msr	vbar_el1, x0
+1:	set_vbar	vbar_el1, x0
 	mov	x0, #3 << 20
 	msr	cpacr_el1, x0			/* Enable FP/SIMD */
 0:
@@ -325,6 +361,7 @@ ENDPROC(smp_kick_all_cpus)
 /*-----------------------------------------------------------------------*/
 
 ENTRY(c_runtime_cpu_setup)
+#if defined(CONFIG_ARMV8__SPL_EXCEPTION_VECTORS) || !defined(CONFIG_SPL_BUILD)
 	/* Relocate vBAR */
 	adr	x0, vectors
 	switch_el x1, 3f, 2f, 1f
@@ -334,6 +371,7 @@ ENTRY(c_runtime_cpu_setup)
 	b	0f
 1:	msr	vbar_el1, x0
 0:
+#endif
 
 	ret
 ENDPROC(c_runtime_cpu_setup)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2009-2015 Freescale Semiconductor, Inc. and others
  *
@@ -12,8 +13,6 @@
  *
  * Based on original driver mpc5121_nfc.c.
  *
- * SPDX-License-Identifier:	GPL-2.0+
- *
  * Limitations:
  * - Untested on MPC5125 and M54418.
  * - DMA and pipelining not used.
@@ -26,7 +25,7 @@
 #include <malloc.h>
 
 #include <linux/mtd/mtd.h>
-#include <linux/mtd/nand.h>
+#include <linux/mtd/rawnand.h>
 #include <linux/mtd/partitions.h>
 
 #include <nand.h>

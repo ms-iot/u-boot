@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Chromium OS cros_ec driver
  *
  * Copyright (c) 2012 The Chromium OS Authors.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -41,8 +40,6 @@ enum {
 	/* Timeout waiting for a synchronous hash to be recomputed */
 	CROS_EC_CMD_HASH_TIMEOUT_MS = 2000,
 };
-
-DECLARE_GLOBAL_DATA_PTR;
 
 void cros_ec_dump_data(const char *name, int cmd, const uint8_t *data, int len)
 {
@@ -1031,7 +1028,7 @@ int cros_ec_decode_ec_flash(struct udevice *dev, struct fdt_cros_ec *config)
 		return -1;
 	}
 
-	if (of_read_fmap_entry(flash_node, "flash", &config->flash)) {
+	if (ofnode_read_fmap_entry(flash_node,  &config->flash)) {
 		debug("Failed to decode flash node in chrome-ec\n");
 		return -1;
 	}
@@ -1053,7 +1050,7 @@ int cros_ec_decode_ec_flash(struct udevice *dev, struct fdt_cros_ec *config)
 			return -1;
 		}
 
-		if (of_read_fmap_entry(node, "reg", &config->region[region])) {
+		if (ofnode_read_fmap_entry(node, &config->region[region])) {
 			debug("Failed to decode flash region in chrome-ec'\n");
 			return -1;
 		}

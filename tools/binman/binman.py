@@ -1,15 +1,15 @@
 #!/usr/bin/env python2
+# SPDX-License-Identifier: GPL-2.0+
 
 # Copyright (c) 2016 Google, Inc
 # Written by Simon Glass <sjg@chromium.org>
-#
-# SPDX-License-Identifier:	GPL-2.0+
 #
 # Creates binary images from input files controlled by a description
 #
 
 """See README for more information"""
 
+import glob
 import os
 import sys
 import traceback
@@ -21,20 +21,26 @@ for dirname in ['../patman', '../dtoc', '..']:
     sys.path.insert(0, os.path.join(our_path, dirname))
 
 # Bring in the libfdt module
-sys.path.insert(0, 'tools')
-
-# Also allow entry-type modules to be brought in from the etype directory.
-sys.path.insert(0, os.path.join(our_path, 'etype'))
+sys.path.insert(0, 'scripts/dtc/pylibfdt')
 
 import cmdline
 import command
 import control
+import test_util
 
-def RunTests():
-    """Run the functional tests and any embedded doctests"""
+def RunTests(debug, args):
+    """Run the functional tests and any embedded doctests
+
+    Args:
+        debug: True to enable debugging, which shows a full stack trace on error
+        args: List of positional args provided to binman. This can hold a test
+            name to execute (as in 'binman -t testSections', for example)
+    """
+    import elf_test
     import entry_test
     import fdt_test
-    import func_test
+    import ftest
+    import image_test
     import test
     import doctest
 
@@ -44,31 +50,52 @@ def RunTests():
         suite.run(result)
 
     sys.argv = [sys.argv[0]]
-    for module in (func_test.TestFunctional, fdt_test.TestFdt,
-                   entry_test.TestEntry):
-        suite = unittest.TestLoader().loadTestsFromTestCase(module)
+    if debug:
+        sys.argv.append('-D')
+
+    # Run the entry tests first ,since these need to be the first to import the
+    # 'entry' module.
+    test_name = args and args[0] or None
+    for module in (entry_test.TestEntry, ftest.TestFunctional, fdt_test.TestFdt,
+                   elf_test.TestElf, image_test.TestImage):
+        if test_name:
+            try:
+                suite = unittest.TestLoader().loadTestsFromName(test_name, module)
+            except AttributeError:
+                continue
+        else:
+            suite = unittest.TestLoader().loadTestsFromTestCase(module)
         suite.run(result)
 
     print result
     for test, err in result.errors:
         print test.id(), err
     for test, err in result.failures:
-        print err
+        print err, result.failures
+    if result.errors or result.failures:
+      print 'binman tests FAILED'
+      return 1
+    return 0
+
+def GetEntryModules(include_testing=True):
+    """Get a set of entry class implementations
+
+    Returns:
+        Set of paths to entry class filenames
+    """
+    glob_list = glob.glob(os.path.join(our_path, 'etype/*.py'))
+    return set([os.path.splitext(os.path.basename(item))[0]
+                for item in glob_list
+                if include_testing or '_testing' not in item])
 
 def RunTestCoverage():
     """Run the tests and check that we get 100% coverage"""
-    # This uses the build output from sandbox_spl to get _libfdt.so
-    cmd = ('PYTHONPATH=%s/sandbox_spl/tools coverage run '
-            '--include "tools/binman/*.py" --omit "*test*,*binman.py" '
-            'tools/binman/binman.py -t' % options.build_dir)
-    os.system(cmd)
-    stdout = command.Output('coverage', 'report')
-    coverage = stdout.splitlines()[-1].split(' ')[-1]
-    if coverage != '100%':
-        print stdout
-        print "Type 'coverage html' to get a report in htmlcov/index.html"
-        raise ValueError('Coverage error: %s, but should be 100%%' % coverage)
-
+    glob_list = GetEntryModules(False)
+    all_set = set([os.path.splitext(os.path.basename(item))[0]
+                   for item in glob_list if '_testing' not in item])
+    test_util.RunTestCoverage('tools/binman/binman.py', None,
+            ['*test*', '*binman.py', 'tools/patman/*', 'tools/dtoc/*'],
+            options.build_dir, all_set)
 
 def RunBinman(options, args):
     """Main entry point to binman once arguments are parsed
@@ -86,18 +113,13 @@ def RunBinman(options, args):
         sys.tracebacklimit = 0
 
     if options.test:
-        RunTests()
+        ret_code = RunTests(options.debug, args[1:])
 
     elif options.test_coverage:
         RunTestCoverage()
 
-    elif options.full_help:
-        pager = os.getenv('PAGER')
-        if not pager:
-            pager = 'more'
-        fname = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),
-                            'README')
-        command.Run(pager, fname)
+    elif options.entry_docs:
+        control.WriteEntryDocs(GetEntryModules())
 
     else:
         try:

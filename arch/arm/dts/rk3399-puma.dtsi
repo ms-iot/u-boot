@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+ OR X11
 /*
  * (C) Copyright 2017 Theobroma Systems Design und Consulting GmbH
- *
- * SPDX-License-Identifier:     GPL-2.0+	X11
  */
 
 #include <dt-bindings/pwm/pwm.h>
@@ -16,6 +15,7 @@
 		u-boot,mmc-env-offset = <0x4000>;      /* @  16KB */
 		u-boot,efi-partition-entries-offset = <0x200000>; /* 2MB */
 		u-boot,boot-led = "module_led";
+		sysreset-gpio = <&gpio1 RK_PA6 GPIO_ACTIVE_HIGH>;
 	};
 
 	chosen {
@@ -208,8 +208,6 @@
 };
 
 &hdmi {
-	#address-cells = <1>;
-	#size-cells = <0>;
 	#sound-dai-cells = <0>;
 	status = "okay";
 };
@@ -544,10 +542,15 @@
 
 &dwc3_typec1 {
 	status = "okay";
+	tsd,usb-port-power = "usbhub_enable";
 };
 
 &vopb {
 	status = "okay";
+};
+
+&gpio1 {
+	u-boot,dm-pre-reloc;
 };
 
 &gpio3 {

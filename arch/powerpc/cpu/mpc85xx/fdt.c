@@ -1,14 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2007-2011 Freescale Semiconductor, Inc.
  *
  * (C) Copyright 2000
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
-#include <libfdt.h>
+#include <environment.h>
+#include <linux/libfdt.h>
 #include <fdt_support.h>
 #include <asm/processor.h>
 #include <linux/ctype.h>

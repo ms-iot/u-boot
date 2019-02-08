@@ -1,16 +1,12 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2017 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __LS1088A_QDS_H
 #define __LS1088A_QDS_H
 
 #include "ls1088a_common.h"
-
-
-#define CONFIG_DISPLAY_BOARDINFO_LATE
 
 
 #ifndef __ASSEMBLY__
@@ -27,7 +23,6 @@ unsigned long get_board_ddr_clk(void);
 #define CONFIG_SYS_MMC_ENV_DEV		0
 #define CONFIG_ENV_SIZE			0x2000
 #else
-#define CONFIG_ENV_IS_IN_FLASH
 #define CONFIG_ENV_ADDR			(CONFIG_SYS_FLASH_BASE + 0x300000)
 #define CONFIG_ENV_SECT_SIZE		0x20000
 #define CONFIG_ENV_SIZE			0x20000
@@ -42,8 +37,9 @@ unsigned long get_board_ddr_clk(void);
 #define CONFIG_DDR_CLK_FREQ		100000000
 #else
 #define CONFIG_QIXIS_I2C_ACCESS
-#define CONFIG_SYS_CLK_FREQ		100000000
-#define CONFIG_DDR_CLK_FREQ		100000000
+#define CONFIG_SYS_I2C_EARLY_INIT
+#define CONFIG_SYS_CLK_FREQ		get_board_sys_clk()
+#define CONFIG_DDR_CLK_FREQ		get_board_ddr_clk()
 #endif
 
 #define COUNTER_FREQUENCY_REAL		(CONFIG_SYS_CLK_FREQ/4)
@@ -88,10 +84,17 @@ unsigned long get_board_ddr_clk(void);
 	CSPR_MSEL_NOR						| \
 	CSPR_V)
 #define CONFIG_SYS_NOR_CSOR	CSOR_NOR_ADM_SHIFT(12)
-#define CONFIG_SYS_NOR_FTIM0	(0xc0201410)
-#define CONFIG_SYS_NOR_FTIM1	(0x50009028)
-#define CONFIG_SYS_NOR_FTIM2	(0x0820501c)
-#define CONFIG_SYS_NOR_FTIM3	0x04000000
+#define CONFIG_SYS_NOR_FTIM0	(FTIM0_NOR_TACSE(0x4) | \
+				FTIM0_NOR_TEADC(0x5) | \
+				FTIM0_NOR_TAVDS(0x6) | \
+				FTIM0_NOR_TEAHC(0x5))
+#define CONFIG_SYS_NOR_FTIM1	(FTIM1_NOR_TACO(0x35) | \
+				FTIM1_NOR_TRAD_NOR(0x1a) | \
+				FTIM1_NOR_TSEQRAD_NOR(0x13))
+#define CONFIG_SYS_NOR_FTIM2	(FTIM2_NOR_TCS(0x8) | \
+				FTIM2_NOR_TCH(0x8) | \
+				FTIM2_NOR_TWPH(0xe) | \
+				FTIM2_NOR_TWP(0x1c))
 #define CONFIG_SYS_NOR_FTIM3	0x04000000
 #define CONFIG_SYS_IFC_CCR	0x01000000
 
@@ -324,6 +327,7 @@ unsigned long get_board_ddr_clk(void);
 
 /* QSPI device */
 #if defined(CONFIG_QSPI_BOOT) || defined(CONFIG_SD_BOOT_QSPI)
+#define CONFIG_FSL_QSPI
 #define FSL_QSPI_FLASH_SIZE		(1 << 26)
 #define FSL_QSPI_FLASH_NUM		2
 
@@ -340,7 +344,6 @@ unsigned long get_board_ddr_clk(void);
 #endif
 
 #define CONFIG_CMD_MEMINFO
-#define CONFIG_CMD_MEMTEST
 #define CONFIG_SYS_MEMTEST_START	0x80000000
 #define CONFIG_SYS_MEMTEST_END		0x9fffffff
 
@@ -353,7 +356,6 @@ unsigned long get_board_ddr_clk(void);
 #define CONFIG_FSL_MEMAC
 
 /*  MMC  */
-#define CONFIG_FSL_ESDHC
 #define CONFIG_SYS_FSL_MMC_HAS_CAPBLT_VS33
 #define CONFIG_ESDHC_DETECT_QUIRK ((readb(QIXIS_BASE + QIXIS_STAT_PRES1) & \
 	QIXIS_SDID_MASK) != QIXIS_ESDHC_NO_ADAPTER)
@@ -462,14 +464,11 @@ unsigned long get_board_ddr_clk(void);
 #define XQSGMII_CARD_PHY4_PORT2_ADDR 0xe
 #define XQSGMII_CARD_PHY4_PORT3_ADDR 0xf
 
-#define CONFIG_MII		/* MII PHY management */
 #define CONFIG_ETHPRIME		"DPMAC1@xgmii"
 #define CONFIG_PHY_GIGE		/* Include GbE speed/duplex detection */
 
 #endif
 
-#undef CONFIG_CMDLINE_EDITING
-#include <config_distro_defaults.h>
 #define BOOT_TARGET_DEVICES(func) \
 	func(USB, usb, 0) \
 	func(MMC, mmc, 0) \

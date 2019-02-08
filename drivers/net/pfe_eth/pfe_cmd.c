@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015-2016 Freescale Semiconductor, Inc.
  * Copyright 2017 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -10,7 +9,7 @@
  * @brief PFE utility commands
  */
 
-#include <pfe_eth/pfe_eth.h>
+#include <net/pfe_eth/pfe_eth.h>
 
 static inline void pfe_command_help(void)
 {

@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014-2015 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -202,7 +201,7 @@ struct serdes_prctl_info srds_prctl_info[] = {
 	 .shift = FSL_CHASSIS3_SRDS2_PRTCL_SHIFT
 	},
 #endif
-	{.id = 0, .mask = 0, .shift = 0} /* NULL ENTRY */
+	{} /* NULL ENTRY */
 };
 
 static int get_serdes_prctl_info_idx(u32 serdes_id)
@@ -441,6 +440,7 @@ int setup_serdes_volt(u32 svdd)
 	cfg_tmp >>= 2;
 	do_pll_reset_done(cfg_tmp, serdes2_base);
 #endif
+
 	return ret;
 }
 

@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2008 RuggedCom, Inc.
  * Richard Retanubun <RichardRetanubun@RuggedCom.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -15,7 +14,6 @@
 #include <command.h>
 #include <fdtdec.h>
 #include <ide.h>
-#include <inttypes.h>
 #include <malloc.h>
 #include <memalign.h>
 #include <part_efi.h>
@@ -24,7 +22,12 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#ifdef HAVE_BLOCK_DEVICE
+/*
+ * GUID for basic data partions.
+ */
+static const efi_guid_t partition_basic_data_guid = PARTITION_BASIC_DATA_GUID;
+
+#ifdef CONFIG_HAVE_BLOCK_DEVICE
 /**
  * efi_crc32() - EFI version of crc32 function
  * @buf: buffer to calculate crc32 of
@@ -350,9 +353,7 @@ static int part_test_efi(struct blk_desc *dev_desc)
 static int set_protective_mbr(struct blk_desc *dev_desc)
 {
 	/* Setup the Protective MBR */
-	ALLOC_CACHE_ALIGN_BUFFER(legacy_mbr, p_mbr, 1);
-	memset(p_mbr, 0, sizeof(*p_mbr));
-
+	ALLOC_CACHE_ALIGN_BUFFER_PAD(legacy_mbr, p_mbr, 1, dev_desc->blksz);
 	if (p_mbr == NULL) {
 		printf("%s: calloc failed!\n", __func__);
 		return -1;
@@ -363,6 +364,10 @@ static int set_protective_mbr(struct blk_desc *dev_desc)
 		pr_err("** Can't read from device %d **\n", dev_desc->devnum);
 		return -1;
 	}
+
+	/* Clear all data in MBR except of backed up boot code */
+	memset((char *)p_mbr + MSDOS_MBR_BOOT_CODE_SIZE, 0, sizeof(*p_mbr) -
+			MSDOS_MBR_BOOT_CODE_SIZE);
 
 	/* Append signature */
 	p_mbr->signature = MSDOS_MBR_SIGNATURE;
@@ -501,12 +506,12 @@ int gpt_fill_pte(struct blk_desc *dev_desc,
 		} else {
 			/* default partition type GUID */
 			memcpy(bin_type_guid,
-			       &PARTITION_BASIC_DATA_GUID, 16);
+			       &partition_basic_data_guid, 16);
 		}
 #else
 		/* partition type GUID */
 		memcpy(gpt_e[i].partition_type_guid.b,
-			&PARTITION_BASIC_DATA_GUID, 16);
+			&partition_basic_data_guid, 16);
 #endif
 
 #if CONFIG_IS_ENABLED(PARTITION_UUIDS)
@@ -931,7 +936,7 @@ static int is_gpt_valid(struct blk_desc *dev_desc, u64 lba,
 		return 0;
 	}
 
-	ALLOC_CACHE_ALIGN_BUFFER(legacy_mbr, mbr, dev_desc->blksz);
+	ALLOC_CACHE_ALIGN_BUFFER_PAD(legacy_mbr, mbr, 1, dev_desc->blksz);
 
 	/* Read MBR Header from device */
 	if (blk_dread(dev_desc, 0, 1, (ulong *)mbr) != 1) {

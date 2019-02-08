@@ -1,17 +1,13 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2017 NXP
  * Copyright 2015 Freescale Semiconductor
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __LS2_RDB_H
 #define __LS2_RDB_H
 
 #include "ls2080a_common.h"
-
-#undef CONFIG_CONS_INDEX
-#define CONFIG_CONS_INDEX       2
 
 #ifdef CONFIG_FSL_QSPI
 #ifdef CONFIG_TARGET_LS2081ARDB
@@ -64,8 +60,6 @@ unsigned long get_board_sys_clk(void);
 #define CONFIG_FSL_DDR_BIST	/* enable built-in memory test */
 
 /* SATA */
-#define CONFIG_LIBATA
-#define CONFIG_SCSI_AHCI
 #define CONFIG_SCSI_AHCI_PLAT
 
 #define CONFIG_SYS_SATA1			AHCI_BASE_ADDR1
@@ -287,12 +281,8 @@ unsigned long get_board_sys_clk(void);
 
 /* SPI */
 #if defined(CONFIG_FSL_QSPI) || defined(CONFIG_FSL_DSPI)
-#define CONFIG_SPI_FLASH
 #ifdef CONFIG_FSL_DSPI
 #define CONFIG_SPI_FLASH_STMICRO
-#endif
-#ifdef CONFIG_FSL_QSPI
-#define CONFIG_SPI_FLASH_SPANSION
 #endif
 #define FSL_QSPI_FLASH_SIZE		SZ_64M	/* 64MB */
 #define FSL_QSPI_FLASH_NUM		2
@@ -327,20 +317,13 @@ unsigned long get_board_sys_clk(void);
 
 /*  MMC  */
 #ifdef CONFIG_MMC
-#define CONFIG_FSL_ESDHC
 #define CONFIG_SYS_FSL_MMC_HAS_CAPBLT_VS33
 #endif
-
-#define CONFIG_MISC_INIT_R
-
-#undef CONFIG_CMDLINE_EDITING
-#include <config_distro_defaults.h>
 
 #define BOOT_TARGET_DEVICES(func) \
 	func(USB, usb, 0) \
 	func(MMC, mmc, 0) \
-	func(SCSI, scsi, 0) \
-	func(DHCP, dhcp, na)
+	func(SCSI, scsi, 0)
 #include <config_distro_bootcmd.h>
 
 #ifdef CONFIG_QSPI_BOOT
@@ -493,7 +476,6 @@ unsigned long get_board_sys_clk(void);
 #define AQ_PHY_ADDR4		0x03
 #define AQR405_IRQ_MASK		0x36
 
-#define CONFIG_MII
 #define CONFIG_ETHPRIME		"DPMAC1@xgmii"
 #define CONFIG_PHY_AQUANTIA
 #endif

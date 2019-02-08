@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2017 NXP
  * Copyright 2014-2015 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -10,6 +9,7 @@
 #include <asm/io.h>
 #include <linux/errno.h>
 #include <asm/system.h>
+#include <fm_eth.h>
 #include <asm/armv8/mmu.h>
 #include <asm/io.h>
 #include <asm/arch/fsl_serdes.h>
@@ -19,11 +19,7 @@
 #include <fsl_immap.h>
 #include <asm/arch/mp.h>
 #include <efi_loader.h>
-#include <fm_eth.h>
 #include <fsl-mc/fsl_mc.h>
-#ifdef CONFIG_FSL_PFE
-#include <pfe_eth/pfe_eth.h>
-#endif
 #ifdef CONFIG_FSL_ESDHC
 #include <fsl_esdhc.h>
 #endif
@@ -37,9 +33,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#ifndef CONFIG_SYS_DCACHE_OFF
 struct mm_region *mem_map = early_map;
-#endif
 
 void cpu_name(char *name)
 {
@@ -481,11 +475,6 @@ int cpu_eth_init(bd_t *bis)
 {
 	int error = 0;
 
-#if defined(CONFIG_FSL_PFE)
-	gemac_initialize(bis, 0, "pfe_eth0");
-	gemac_initialize(bis, 1, "pfe_eth1");
-#endif
-
 #if defined(CONFIG_FSL_MC_ENET) && !defined(CONFIG_SPL_BUILD)
 	error = fsl_mc_ldpaa_init(bis);
 #endif
@@ -654,6 +643,7 @@ void __efi_runtime EFIAPI efi_reset_system(
 	switch (reset_type) {
 	case EFI_RESET_COLD:
 	case EFI_RESET_WARM:
+	case EFI_RESET_PLATFORM_SPECIFIC:
 		reset_cpu(0);
 		break;
 	case EFI_RESET_SHUTDOWN:
@@ -664,9 +654,9 @@ void __efi_runtime EFIAPI efi_reset_system(
 	while (1) { }
 }
 
-void efi_reset_system_init(void)
+efi_status_t efi_reset_system_init(void)
 {
-       efi_add_runtime_mmio(&rstcr, sizeof(*rstcr));
+	return efi_add_runtime_mmio(&rstcr, sizeof(*rstcr));
 }
 
 #endif
@@ -878,7 +868,6 @@ void efi_add_known_memory(void)
 }
 #endif
 
-#ifndef CONFIG_SYS_DCACHE_OFF
 /*
  * Before DDR size is known, early MMU table have DDR mapped as device memory
  * to avoid speculative access. To relocate U-Boot to DDR, "normal memory"
@@ -943,16 +932,13 @@ void update_early_mmu_table(void)
 		}
 	}
 }
-#endif
 
 __weak int dram_init(void)
 {
 	fsl_initdram();
-#ifndef CONFIG_SYS_DCACHE_OFF
 #if !defined(CONFIG_SPL) || defined(CONFIG_SPL_BUILD)
 	/* This will break-before-make MMU for DDR */
 	update_early_mmu_table();
-#endif
 #endif
 
 	return 0;

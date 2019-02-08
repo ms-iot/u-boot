@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * SPI Flash Core
  *
@@ -5,8 +6,6 @@
  * Copyright (C) 2013 Jagannadha Sutradharudu Teki, Xilinx Inc.
  * Copyright (C) 2010 Reinhard Meyer, EMK Elektronik
  * Copyright (C) 2008 Atmel Corporation
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -136,6 +135,7 @@ static int clean_bar(struct spi_flash *flash)
 	if (flash->bank_curr == 0)
 		return 0;
 	cmd = flash->bank_write_cmd;
+	flash->bank_curr = 0;
 
 	return spi_flash_write_common(flash, &cmd, 1, &bank_sel, 1);
 }
@@ -550,7 +550,6 @@ int spi_flash_cmd_read_ops(struct spi_flash *flash, u32 offset,
 	return ret;
 }
 
-
 #ifdef CONFIG_SPI_FLASH_SST
 static bool sst26_process_bpr(u32 bpr_size, u8 *cmd, u32 bit, enum lock_ctl ctl)
 {
@@ -592,22 +591,18 @@ static int sst26_lock_ctl(struct spi_flash *flash, u32 ofs, size_t len, enum loc
 	int ret;
 
 	/* Check length and offset for 64k alignment */
-	if ((ofs & (SZ_64K - 1)) || (len & (SZ_64K - 1))) {
-		printf("Offset or lenght not allighned\n");
+	if ((ofs & (SZ_64K - 1)) || (len & (SZ_64K - 1)))
 		return -EINVAL;
-	}
 
-	if (ofs + len > flash->size) {
-		printf("Size exceeding flash size\n");
+	if (ofs + len > flash->size)
 		return -EINVAL;
-	}
 
 	/* SST26 family has only 4Mbit, 8Mbit, 16 Mbit, 32 Mbit and 64 Mbit IC */
 	if (flash->size != SZ_512K &&
-	    flash->size != SZ_1M &&
-	    flash->size != SZ_2M &&
-	    flash->size != SZ_4M &&
-	    flash->size != SZ_8M)
+		flash->size != SZ_1M &&
+		flash->size != SZ_2M &&
+		flash->size != SZ_4M &&
+		flash->size != SZ_8M)
 		return -EINVAL;
 
 	bpr_size = 2 + (flash->size / SZ_64K / 8);
@@ -687,13 +682,11 @@ static int sst26_lock_ctl(struct spi_flash *flash, u32 ofs, size_t len, enum loc
 
 	return 0;
 }
-#endif
 
 static int sst26_unlock(struct spi_flash *flash, u32 ofs, size_t len)
 {
 	return sst26_lock_ctl(flash, ofs, len, SST26_CTL_UNLOCK);
 }
-
 
 static int sst26_lock(struct spi_flash *flash, u32 ofs, size_t len)
 {
@@ -842,6 +835,7 @@ int sst_write_bp(struct spi_flash *flash, u32 offset, size_t len,
 	spi_release_bus(spi);
 	return ret;
 }
+#endif
 
 
 #if defined(CONFIG_SPI_FLASH_STMICRO) || defined(CONFIG_SPI_FLASH_SST)
@@ -1218,14 +1212,23 @@ int spi_flash_scan(struct spi_flash *flash)
 	}
 #endif
 
+/* sst26wf series block protection implementation differs from other series */
+#if defined(CONFIG_SPI_FLASH_SST)
+	if (JEDEC_MFR(info) == SPI_FLASH_CFI_MFR_SST && info->id[1] == 0x26) {
+		flash->flash_lock = sst26_lock;
+		flash->flash_unlock = sst26_unlock;
+		flash->flash_is_locked = sst26_is_locked;
+	}
+#endif
+
 	/* Compute the flash size */
 	flash->shift = (flash->dual_flash & SF_DUAL_PARALLEL_FLASH) ? 1 : 0;
 	flash->page_size = info->page_size;
 	/*
-	 * The Spansion S25FL032P and S25FL064P have 256b pages, yet use the
-	 * 0x4d00 Extended JEDEC code. The rest of the Spansion flashes with
-	 * the 0x4d00 Extended JEDEC code have 512b pages. All of the others
-	 * have 256b pages.
+	 * The Spansion S25FS512S, S25FL032P and S25FL064P have 256b pages,
+	 * yet use the 0x4d00 Extended JEDEC code. The rest of the Spansion
+	 * flashes with the 0x4d00 Extended JEDEC code have 512b pages.
+	 * All of the others have 256b pages.
 	 */
 	if (JEDEC_EXT(info) == 0x4d00) {
 		if ((JEDEC_ID(info) != 0x0215) &&
@@ -1346,9 +1349,9 @@ int spi_flash_scan(struct spi_flash *flash)
 		flash->cmd_len = 1 + SPI_FLASH_3B_ADDR_LEN;
 #ifndef CONFIG_SPI_FLASH_BAR
 		if (((flash->dual_flash == SF_SINGLE_FLASH) &&
-		(flash->size > SPI_FLASH_16MB_BOUN)) ||
-		((flash->dual_flash > SF_SINGLE_FLASH) &&
-		(flash->size > SPI_FLASH_16MB_BOUN << 1))) {
+			 (flash->size > SPI_FLASH_16MB_BOUN)) ||
+			 ((flash->dual_flash > SF_SINGLE_FLASH) &&
+			 (flash->size > SPI_FLASH_16MB_BOUN << 1))) {
 			puts("SF: Warning - Only lower 16MiB accessible,");
 			puts(" Full access #define CONFIG_SPI_FLASH_BAR\n");
 		}

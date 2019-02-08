@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
@@ -16,8 +15,6 @@
 #include <asm/immap_85xx.h>
 #endif
 #include "vid.h"
-
-DECLARE_GLOBAL_DATA_PTR;
 
 int __weak i2c_multiplexer_select_vid_channel(u8 channel)
 {
@@ -347,6 +344,7 @@ static int set_voltage_to_LTC(int i2caddress, int vdd)
 			return -1;
 		}
 	} while (vdd_last != vdd_target);
+
 	return vdd_last;
 }
 #endif
@@ -381,29 +379,17 @@ int adjust_vdd(ulong vdd_override)
 	int ret, i2caddress;
 	unsigned long vdd_string_override;
 	char *vdd_string;
-	static const uint16_t vdd[32] = {
 #ifdef CONFIG_ARCH_LS1088A
+	static const uint16_t vdd[32] = {
 		10250,
 		9875,
-#else
-		10500,
-		0,      /* reserved */
-#endif
 		9750,
 		0,      /* reserved */
-#ifdef CONFIG_ARCH_LS1088A
-		0,      /* reserved */
-#else
-		9500,
-#endif
 		0,      /* reserved */
 		0,      /* reserved */
 		0,      /* reserved */
-#ifdef CONFIG_ARCH_LS1088A
+		0,      /* reserved */
 		9000,
-#else
-		0,      /* reserved */
-#endif
 		0,      /* reserved */
 		0,      /* reserved */
 		0,      /* reserved */
@@ -412,18 +398,10 @@ int adjust_vdd(ulong vdd_override)
 		0,      /* reserved */
 		0,      /* reserved */
 		10000,  /* 1.0000V */
-#ifdef CONFIG_ARCH_LS1088A
 		10125,
-#else
-		0,      /* reserved */
-#endif
 		10250,
 		0,      /* reserved */
-#ifdef CONFIG_ARCH_LS1088A
 		0,      /* reserved */
-#else
-		10500,
-#endif
 		0,      /* reserved */
 		0,      /* reserved */
 		0,      /* reserved */
@@ -436,6 +414,43 @@ int adjust_vdd(ulong vdd_override)
 		0,      /* reserved */
 		0,      /* reserved */
 	};
+
+#else
+	static const uint16_t vdd[32] = {
+		10500,
+		0,      /* reserved */
+		9750,
+		0,      /* reserved */
+		9500,
+		0,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+		9000,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+		10000,  /* 1.0000V */
+		0,      /* reserved */
+		10250,
+		0,      /* reserved */
+		10500,
+		0,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+		0,      /* reserved */
+	};
+#endif
 	struct vdd_drive {
 		u8 vid;
 		unsigned voltage;

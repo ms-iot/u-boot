@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2013 Boris BREZILLON <b.brezillon.dev@gmail.com>
  * Copyright (C) 2015 Roy Spliet <r.spliet@ultimaker.com>
@@ -21,8 +22,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -32,7 +31,7 @@
 
 #include <linux/kernel.h>
 #include <linux/mtd/mtd.h>
-#include <linux/mtd/nand.h>
+#include <linux/mtd/rawnand.h>
 #include <linux/mtd/partitions.h>
 #include <linux/io.h>
 
@@ -1370,7 +1369,7 @@ static int sunxi_nand_chip_init_timings(struct sunxi_nand_chip *chip)
 						ONFI_FEATURE_ADDR_TIMING_MODE,
 						feature);
 			chip->nand.select_chip(mtd, -1);
-			if (ret)
+			if (ret && ret != -ENOTSUPP)
 				return ret;
 		}
 	}
@@ -1407,8 +1406,14 @@ static int sunxi_nand_hw_common_ecc_ctrl_init(struct mtd_info *mtd,
 
 	/* Add ECC info retrieval from DT */
 	for (i = 0; i < ARRAY_SIZE(strengths); i++) {
-		if (ecc->strength <= strengths[i])
+		if (ecc->strength <= strengths[i]) {
+			/*
+			 * Update ecc->strength value with the actual strength
+			 * that will be used by the ECC engine.
+			 */
+			ecc->strength = strengths[i];
 			break;
+		}
 	}
 
 	if (i >= ARRAY_SIZE(strengths)) {

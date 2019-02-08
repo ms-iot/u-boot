@@ -36,14 +36,9 @@
 
 /* High Level Configuration Options */
 #define CONFIG_SYS_BOOK3E_HV		/* Category E.HV supported */
-#define CONFIG_MP			/* support multiple processors */
 
 /* support deep sleep */
 #define CONFIG_DEEP_SLEEP
-
-#ifndef CONFIG_SYS_TEXT_BASE
-#define CONFIG_SYS_TEXT_BASE	0xeff40000
-#endif
 
 #ifndef CONFIG_RESET_VECTOR_ADDRESS
 #define CONFIG_RESET_VECTOR_ADDRESS	0xeffffffc
@@ -126,8 +121,6 @@ unsigned long get_board_ddr_clk(void);
 
 #define CONFIG_SYS_MEMTEST_START	0x00200000	/* memtest works on */
 #define CONFIG_SYS_MEMTEST_END		0x00400000
-#define CONFIG_SYS_ALT_MEMTEST
-#define CONFIG_PANIC_HANG	/* do not reset board on panic */
 
 /*
  *  Config the L3 Cache as L3 SRAM
@@ -344,9 +337,6 @@ unsigned long get_board_ddr_clk(void);
 #define CONFIG_SYS_RAMBOOT
 #endif
 
-#define CONFIG_BOARD_EARLY_INIT_R
-#define CONFIG_MISC_INIT_R
-
 #define CONFIG_HWCONFIG
 
 /* define to use L1 as initial stack */
@@ -372,7 +362,6 @@ unsigned long get_board_ddr_clk(void);
  * open - index 2
  * shorted - index 1
  */
-#define CONFIG_CONS_INDEX	1
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_REG_SIZE	1
 #define CONFIG_SYS_NS16550_CLK		(get_bus_freq(0)/2)
@@ -500,9 +489,6 @@ unsigned long get_board_ddr_clk(void);
 /* SATA */
 #define CONFIG_FSL_SATA_V2
 #ifdef CONFIG_FSL_SATA_V2
-#define CONFIG_LIBATA
-#define CONFIG_FSL_SATA
-
 #define CONFIG_SYS_SATA_MAX_DEVICE	2
 #define CONFIG_SATA1
 #define CONFIG_SYS_SATA1		CONFIG_SYS_MPC85xx_SATA1_ADDR
@@ -527,7 +513,6 @@ unsigned long get_board_ddr_clk(void);
 #endif
 
 #ifdef CONFIG_MMC
-#define CONFIG_FSL_ESDHC
 #define CONFIG_FSL_ESDHC_USE_PERIPHERAL_CLK
 #define CONFIG_SYS_FSL_ESDHC_ADDR       CONFIG_SYS_MPC85xx_ESDHC_ADDR
 #define CONFIG_FSL_ESDHC_ADAPTER_IDENT
@@ -564,7 +549,6 @@ unsigned long get_board_ddr_clk(void);
 #define CONFIG_SYS_DPAA_PME
 
 #define CONFIG_QE
-#define CONFIG_U_QE
 /* Default address of microcode for the Linux Fman driver */
 #if defined(CONFIG_SPIFLASH)
 /*
@@ -614,7 +598,6 @@ unsigned long get_board_ddr_clk(void);
 #define CONFIG_SYS_FM1_DTSEC3_RISER_PHY_ADDR    0x1e
 #define CONFIG_SYS_FM1_DTSEC4_RISER_PHY_ADDR    0x1f
 
-#define CONFIG_MII		/* MII PHY management */
 #define CONFIG_ETHPRIME		"FM1@DTSEC1"
 #endif
 
@@ -627,8 +610,6 @@ unsigned long get_board_ddr_clk(void);
  * Dynamic MTD Partition support with mtdparts
  */
 #ifdef CONFIG_MTD_NOR_FLASH
-#define CONFIG_MTD_DEVICE
-#define CONFIG_MTD_PARTITIONS
 #define CONFIG_FLASH_CFI_MTD
 #endif
 
@@ -641,9 +622,6 @@ unsigned long get_board_ddr_clk(void);
 /*
  * Miscellaneous configurable options
  */
-#define CONFIG_SYS_LONGHELP			/* undef to save memory	*/
-#define CONFIG_CMDLINE_EDITING			/* Command-line editing */
-#define CONFIG_AUTO_COMPLETE			/* add autocompletion support */
 #define CONFIG_SYS_LOAD_ADDR	0x2000000	/* default load address */
 
 /*
@@ -671,7 +649,6 @@ unsigned long get_board_ddr_clk(void);
 #define __USB_PHY_TYPE	utmi
 
 #define	CONFIG_EXTRA_ENV_SETTINGS				\
-	"initrd_high=0xffffffff\0"				\
 	"hwconfig=fsl_ddr:bank_intlv=auto;"			\
 	"usb1:dr_mode=host,phy_type=" __stringify(__USB_PHY_TYPE) "\0"\
 	"netdev=eth0\0"						\

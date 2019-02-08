@@ -15,14 +15,11 @@
 #include <asm/arch/stream_id_lsch2.h>
 #include <asm/arch/soc.h>
 
-#define CONFIG_SUPPORT_RAW_INITRD
-
 #define CONFIG_BOARD_LATE_INIT				/* scsi/sata init */
 #define CONFIG_DISPLAY_BOARDINFO_LATE
 #define CONFIG_MISC_INIT_R
 
 #ifdef CONFIG_SPL
-#define CONFIG_SPL_FRAMEWORK
 #ifdef CONFIG_PBL_RCW_SECUREBOOT
 #define CONFIG_SYS_FSL_PBL_RCW "board/scalys/grapeboard/rcw_secureboot.cfg"
 #else
@@ -31,7 +28,6 @@
 #define CONFIG_SYS_FSL_PBL_PBI "board/scalys/grapeboard/pbi.cfg"
 
 /* Execute from OCRAM */
-#define CONFIG_SYS_TEXT_BASE 0x82000000
 #define CONFIG_SPL_TEXT_BASE CONFIG_SYS_FSL_OCRAM_BASE
 #define CONFIG_SPL_MAX_SIZE 0x00018000
 #define CONFIG_SPL_STACK \
@@ -41,8 +37,6 @@
 #define CONFIG_SPL_FSL_PBL 1
 #define CONFIG_SPL_PAD_TO 0x00040000
 #define CONFIG_SPL_LOAD_FIT_ADDRESS (0x40000000 + CONFIG_SPL_PAD_TO)
-#else /* SPL */
-#define CONFIG_SYS_TEXT_BASE 				0x40001000 /* QSPI0_AMBA_BASE + CONFIG_UBOOT_TEXT_OFFSET */
 #endif /* SPL */
 
 #define CONFIG_SYS_CLK_FREQ					125000000	/* 125MHz */
@@ -59,7 +53,6 @@
 #define CONFIG_SYS_DDR_BLOCK2_BASE     		0x880000000ULL
 #define CONFIG_DIMM_SLOTS_PER_CTLR			1
 #define CONFIG_CHIP_SELECTS_PER_CTRL		1
-#define CONFIG_NR_DRAM_BANKS				2
 #define CONFIG_SYS_SDRAM_SIZE				0x40000000
 #define CONFIG_CMD_MEMINFO
 #define CONFIG_CMD_MEMTEST
@@ -117,8 +110,6 @@
 
 /* I2C */
 #define CONFIG_SYS_I2C
-#define CONFIG_SYS_I2C_MXC
-#define CONFIG_SYS_I2C_MXC_I2C1
 
 /* UART */
 #define CONFIG_CONS_INDEX       			1
@@ -139,19 +130,9 @@
 #define CONFIG_SYS_CBSIZE					512	/* Console I/O Buffer Size */
 #define CONFIG_SYS_PBSIZE					(CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
 #define CONFIG_SYS_BARGSIZE					CONFIG_SYS_CBSIZE /* Boot args buffer */
-#define CONFIG_SYS_LONGHELP
-#define CONFIG_AUTO_COMPLETE
 #define CONFIG_SYS_MAXARGS					64	/* max command args */
 
-#define CONFIG_PANIC_HANG
 #define CONFIG_SYS_BOOTM_LEN   				(64 << 20)      /* Increase max gunzip size */
-
-/* PFE Ethernet */
-#ifdef CONFIG_FSL_PFE
-#define EMAC1_PHY_ADDR          			0x1
-#define EMAC2_PHY_ADDR          			0x2
-#define CONFIG_SYS_LS_PFE_FW_ADDR			0x40240000
-#endif
 
 /*  MMC  */
 #ifdef CONFIG_MMC
@@ -160,6 +141,7 @@
 #endif
 
 /* SATA */
+#ifdef CONFIG_AHCI
 #define CONFIG_LIBATA
 #define CONFIG_SCSI
 #define CONFIG_SCSI_AHCI
@@ -169,6 +151,7 @@
 #define CONFIG_SYS_SCSI_MAX_SCSI_ID			1
 #define CONFIG_SYS_SCSI_MAX_LUN				1
 #define CONFIG_SYS_SCSI_MAX_DEVICE			(CONFIG_SYS_SCSI_MAX_SCSI_ID * CONFIG_SYS_SCSI_MAX_LUN)
+#endif /* AHCI */
 
 /* PCIE */
 #define CONFIG_PCIE1
@@ -191,12 +174,16 @@
 #define CONFIG_MTD_UBI_WL_THRESHOLD	4096
 #define CONFIG_MTD_UBI_BEB_LIMIT	20
 
-#include <config_distro_defaults.h>
 #ifndef CONFIG_SPL_BUILD
+#ifdef CONFIG_AHCI
+#define BOOT_TARGET_SCSI func(SCSI, scsi, 0)
+#else
+#define BOOT_TARGET_SCSI
+#endif /* CONFIG_AHCI */
 #define BOOT_TARGET_DEVICES(func) \
 	func(MMC, mmc, 0) \
 	func(USB, usb, 0) \
-	func(SCSI, scsi, 0) /*/
+	BOOT_TARGET_SCSI /*\
 	func(USB, usb, 1) \
 	func(UBIFS, ubifs, 0)*/
 #include <config_distro_bootcmd.h>

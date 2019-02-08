@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2015 Freescale Semiconductor
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __LS1043ARDB_H__
@@ -9,22 +8,14 @@
 
 #include "ls1043a_common.h"
 
-#if defined(CONFIG_NAND_BOOT) || defined(CONFIG_SD_BOOT)
-#define CONFIG_SYS_TEXT_BASE		0x82000000
-#else
-#define CONFIG_SYS_TEXT_BASE		0x60100000
-#endif
-
 #define CONFIG_SYS_CLK_FREQ		100000000
 #define CONFIG_DDR_CLK_FREQ		100000000
 
 #define CONFIG_LAYERSCAPE_NS_ACCESS
-#define CONFIG_MISC_INIT_R
 
 #define CONFIG_DIMM_SLOTS_PER_CTLR	1
 /* Physical Memory Map */
 #define CONFIG_CHIP_SELECTS_PER_CTRL	4
-#define CONFIG_NR_DRAM_BANKS		2
 
 #define CONFIG_SYS_SPD_BUS_NUM		0
 
@@ -277,17 +268,8 @@
 #endif
 #endif
 
-/* QE */
-#ifndef SPL_NO_QE
-#if !defined(CONFIG_NAND_BOOT) && !defined(CONFIG_QSPI_BOOT)
-#define CONFIG_U_QE
-#endif
-#endif
-
 /* SATA */
 #ifndef SPL_NO_SATA
-#define CONFIG_LIBATA
-#define CONFIG_SCSI_AHCI
 #ifndef CONFIG_CMD_EXT2
 #define CONFIG_CMD_EXT2
 #endif

@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2016 NXP Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -136,13 +135,13 @@ static int sec_firmware_check_copy_loadable(const void *sec_firmware_img,
 	conf_node_off = fit_conf_get_node(sec_firmware_img, conf_node_name);
 	if (conf_node_off < 0) {
 		printf("SEC Firmware: %s: no such config\n", conf_node_name);
-	return -ENOENT;
+		return -ENOENT;
 	}
 
 	/* find the node holding the images information */
 	images = fdt_path_offset(sec_firmware_img, FIT_IMAGES_PATH);
 	if (images < 0) {
-		debug("%s: Cannot find /images node: %d\n", __func__, images);
+		printf("%s: Cannot find /images node: %d\n", __func__, images);
 		return -1;
 	}
 

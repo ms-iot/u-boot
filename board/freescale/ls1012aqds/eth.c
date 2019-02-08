@@ -1,23 +1,25 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015-2016 Freescale Semiconductor, Inc.
  * Copyright 2017 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
+#include <dm.h>
 #include <asm/io.h>
 #include <netdev.h>
 #include <fm_eth.h>
 #include <fsl_mdio.h>
 #include <malloc.h>
+#include <asm/types.h>
 #include <fsl_dtsec.h>
 #include <asm/arch/soc.h>
 #include <asm/arch-fsl-layerscape/config.h>
 #include <asm/arch-fsl-layerscape/immap_lsch2.h>
 #include <asm/arch/fsl_serdes.h>
 #include "../common/qixis.h"
-#include <pfe_eth/pfe_eth.h>
+#include <net/pfe_eth/pfe_eth.h>
+#include <dm/platform_data/pfe_dm_eth.h>
 #include "ls1012aqds_qixis.h"
 
 #define EMI_NONE	0xFF
@@ -124,46 +126,51 @@ static int ls1012aqds_mdio_init(char *realbusname, u8 muxval)
 	return mdio_register(bus);
 }
 
-int board_eth_init(bd_t *bis)
+int pfe_eth_board_init(struct udevice *dev)
 {
-#ifdef CONFIG_FSL_PFE
+	static int init_done;
 	struct mii_dev *bus;
 	static const char *mdio_name;
-	struct mdio_info mac1_mdio_info;
+	struct pfe_mdio_info mac_mdio_info;
 	struct ccsr_gur __iomem *gur = (void *)CONFIG_SYS_FSL_GUTS_ADDR;
 	u8 data8;
+	struct pfe_eth_dev *priv = dev_get_priv(dev);
 
 	int srds_s1 = in_be32(&gur->rcwsr[4]) &
 			FSL_CHASSIS2_RCWSR4_SRDS1_PRTCL_MASK;
 	srds_s1 >>= FSL_CHASSIS2_RCWSR4_SRDS1_PRTCL_SHIFT;
 
-	init_pfe_scfg_dcfg_regs();
+	ls1012aqds_mux_mdio(EMI1_SLOT1);
 
-	ls1012aqds_mux_mdio(2);
+	if (!init_done) {
+		mac_mdio_info.reg_base = (void *)EMAC1_BASE_ADDR;
+		mac_mdio_info.name = DEFAULT_PFE_MDIO_NAME;
 
-	mac1_mdio_info.reg_base = (void *)EMAC1_BASE_ADDR;
-	mac1_mdio_info.name = DEFAULT_PFE_MDIO_NAME;
-
-	bus = pfe_mdio_init(&mac1_mdio_info);
-	if (!bus) {
-		printf("Failed to register mdio\n");
-		return -1;
+		bus = pfe_mdio_init(&mac_mdio_info);
+		if (!bus) {
+			printf("Failed to register mdio\n");
+			return -1;
+		}
+		init_done = 1;
 	}
 
-	mac1_mdio_info.reg_base = (void *)0x04220000; /*EMAC2_BASE_ADDR*/
-	mac1_mdio_info.name = DEFAULT_PFE_MDIO1_NAME;
+	if (priv->gemac_port) {
+		mac_mdio_info.reg_base = (void *)EMAC2_BASE_ADDR;
+		mac_mdio_info.name = DEFAULT_PFE_MDIO1_NAME;
 
-	bus = pfe_mdio_init(&mac1_mdio_info);
-	if (!bus) {
-		printf("Failed to register mdio\n");
-		return -1;
+		bus = pfe_mdio_init(&mac_mdio_info);
+		if (!bus) {
+			printf("Failed to register mdio\n");
+			return -1;
+		}
 	}
 
 	switch (srds_s1) {
 	case 0x3508:
 		printf("ls1012aqds:supported SerDes PRCTL= %d\n", srds_s1);
-#ifdef RGMII_RESET_WA
-		/* Work around for FPGA registers initialization
+#ifdef CONFIG_PFE_RGMII_RESET_WA
+		/*
+		 * Work around for FPGA registers initialization
 		 * This is needed for RGMII to work.
 		 */
 		printf("Reset RGMII WA....\n");
@@ -177,38 +184,43 @@ int board_eth_init(bd_t *bis)
 		QIXIS_WRITE(res8[6], data8);
 		data8 = QIXIS_READ(res8[6]);
 #endif
+	if (priv->gemac_port) {
 		mdio_name = ls1012aqds_mdio_name_for_muxval(EMI1_RGMII);
 		if (ls1012aqds_mdio_init(DEFAULT_PFE_MDIO_NAME, EMI1_RGMII)
 		    < 0) {
 			printf("Failed to register mdio for %s\n", mdio_name);
-			return -1;
 		}
 
+		/* MAC2 */
+		mdio_name = ls1012aqds_mdio_name_for_muxval(EMI1_RGMII);
+		bus = miiphy_get_dev_by_name(mdio_name);
+		pfe_set_mdio(priv->gemac_port, bus);
+		pfe_set_phy_address_mode(priv->gemac_port,
+					 CONFIG_PFE_EMAC2_PHY_ADDR,
+					 PHY_INTERFACE_MODE_RGMII);
+
+	} else {
 		mdio_name = ls1012aqds_mdio_name_for_muxval(EMI1_SLOT1);
 		if (ls1012aqds_mdio_init(DEFAULT_PFE_MDIO_NAME, EMI1_SLOT1)
 		< 0) {
 			printf("Failed to register mdio for %s\n", mdio_name);
-			return -1;
 		}
 
-		/* MAC2*/
-		mdio_name = ls1012aqds_mdio_name_for_muxval(EMI1_RGMII);
-		bus = miiphy_get_dev_by_name(mdio_name);
-		pfe_set_mdio(1, bus);
-		pfe_set_phy_address_mode(1,  EMAC2_PHY_ADDR,
-					 PHY_INTERFACE_MODE_RGMII);
-
-		/* MAC1*/
+		/* MAC1 */
 		mdio_name = ls1012aqds_mdio_name_for_muxval(EMI1_SLOT1);
 		bus = miiphy_get_dev_by_name(mdio_name);
-		pfe_set_mdio(0, bus);
-		pfe_set_phy_address_mode(0, EMAC1_PHY_ADDR,
+		pfe_set_mdio(priv->gemac_port, bus);
+		pfe_set_phy_address_mode(priv->gemac_port,
+					 CONFIG_PFE_EMAC1_PHY_ADDR,
 					 PHY_INTERFACE_MODE_SGMII);
+	}
+
 		break;
 
 	case 0x2205:
 		printf("ls1012aqds:supported SerDes PRCTL= %d\n", srds_s1);
-		/* Work around for FPGA registers initialization
+		/*
+		 * Work around for FPGA registers initialization
 		 * This is needed for RGMII to work.
 		 */
 		printf("Reset SLOT1 SLOT2....\n");
@@ -220,43 +232,77 @@ int board_eth_init(bd_t *bis)
 		data8 &= 0x3f;
 		QIXIS_WRITE(rst_frc[2], data8);
 
-		mdio_name = ls1012aqds_mdio_name_for_muxval(EMI1_SLOT1);
-		if (ls1012aqds_mdio_init(DEFAULT_PFE_MDIO_NAME, EMI1_SLOT1)
-		    < 0) {
-			printf("Failed to register mdio for %s\n", mdio_name);
-		return -1;
-		}
-
+	if (priv->gemac_port) {
 		mdio_name = ls1012aqds_mdio_name_for_muxval(EMI1_SLOT2);
 		if (ls1012aqds_mdio_init(DEFAULT_PFE_MDIO_NAME, EMI1_SLOT2)
 		< 0) {
 			printf("Failed to register mdio for %s\n", mdio_name);
-			return -1;
 		}
-		/* MAC2*/
+		/* MAC2 */
 		mdio_name = ls1012aqds_mdio_name_for_muxval(EMI1_SLOT2);
 		bus = miiphy_get_dev_by_name(mdio_name);
 		pfe_set_mdio(1, bus);
-		pfe_set_phy_address_mode(1,  SGMII_2500_PHY2_ADDR,
+		pfe_set_phy_address_mode(1, CONFIG_PFE_SGMII_2500_PHY2_ADDR,
 					 PHY_INTERFACE_MODE_SGMII_2500);
 
 		data8 = QIXIS_READ(brdcfg[12]);
 		data8 |= 0x20;
 		QIXIS_WRITE(brdcfg[12], data8);
 
-		/* MAC1*/
+	} else {
+		mdio_name = ls1012aqds_mdio_name_for_muxval(EMI1_SLOT1);
+		if (ls1012aqds_mdio_init(DEFAULT_PFE_MDIO_NAME, EMI1_SLOT1)
+		    < 0) {
+			printf("Failed to register mdio for %s\n", mdio_name);
+		}
+
+		/* MAC1 */
 		mdio_name = ls1012aqds_mdio_name_for_muxval(EMI1_SLOT1);
 		bus = miiphy_get_dev_by_name(mdio_name);
 		pfe_set_mdio(0, bus);
-		pfe_set_phy_address_mode(0, SGMII_2500_PHY1_ADDR,
+		pfe_set_phy_address_mode(0,
+					 CONFIG_PFE_SGMII_2500_PHY1_ADDR,
 					 PHY_INTERFACE_MODE_SGMII_2500);
+	}
 		break;
 
 	default:
 		printf("ls1012aqds:unsupported SerDes PRCTL= %d\n", srds_s1);
 		break;
 	}
-	cpu_eth_init(bis);
-#endif
-	return pci_eth_init(bis);
+	return 0;
 }
+
+static struct pfe_eth_pdata pfe_pdata0 = {
+	.pfe_eth_pdata_mac = {
+		.iobase = (phys_addr_t)EMAC1_BASE_ADDR,
+		.phy_interface = 0,
+	},
+
+	.pfe_ddr_addr = {
+		.ddr_pfe_baseaddr = (void *)CONFIG_DDR_PFE_BASEADDR,
+		.ddr_pfe_phys_baseaddr = CONFIG_DDR_PFE_PHYS_BASEADDR,
+	},
+};
+
+static struct pfe_eth_pdata pfe_pdata1 = {
+	.pfe_eth_pdata_mac = {
+		.iobase = (phys_addr_t)EMAC2_BASE_ADDR,
+		.phy_interface = 1,
+	},
+
+	.pfe_ddr_addr = {
+		.ddr_pfe_baseaddr = (void *)CONFIG_DDR_PFE_BASEADDR,
+		.ddr_pfe_phys_baseaddr = CONFIG_DDR_PFE_PHYS_BASEADDR,
+	},
+};
+
+U_BOOT_DEVICE(ls1012a_pfe0) = {
+	.name = "pfe_eth",
+	.platdata = &pfe_pdata0,
+};
+
+U_BOOT_DEVICE(ls1012a_pfe1) = {
+	.name = "pfe_eth",
+	.platdata = &pfe_pdata1,
+};

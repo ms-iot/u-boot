@@ -1,8 +1,6 @@
+# SPDX-License-Identifier: GPL-2.0+
 #
 # Copyright (c) 2013 Google, Inc
-#
-# SPDX-License-Identifier:	GPL-2.0+
-#
 
 obj-$(CONFIG_CMD_DM) += cmd_dm.o
 obj-$(CONFIG_UT_DM) += bus.o
@@ -23,6 +21,7 @@ obj-$(CONFIG_DM_I2C) += i2c.o
 obj-$(CONFIG_LED) += led.o
 obj-$(CONFIG_DM_MAILBOX) += mailbox.o
 obj-$(CONFIG_DM_MMC) += mmc.o
+obj-y += ofnode.o
 obj-$(CONFIG_DM_PCI) += pci.o
 obj-$(CONFIG_PHY) += phy.o
 obj-$(CONFIG_POWER_DOMAIN) += power-domain.o
@@ -34,6 +33,7 @@ obj-$(CONFIG_DM_RESET) += reset.o
 obj-$(CONFIG_SYSRESET) += sysreset.o
 obj-$(CONFIG_DM_RTC) += rtc.o
 obj-$(CONFIG_DM_SPI_FLASH) += sf.o
+obj-$(CONFIG_SMEM) += smem.o
 obj-$(CONFIG_DM_SPI) += spi.o
 obj-y += syscon.o
 obj-$(CONFIG_DM_USB) += usb.o
@@ -44,4 +44,8 @@ obj-$(CONFIG_DM_VIDEO) += video.o
 obj-$(CONFIG_ADC) += adc.o
 obj-$(CONFIG_SPMI) += spmi.o
 obj-$(CONFIG_WDT) += wdt.o
+obj-$(CONFIG_AXI) += axi.o
+obj-$(CONFIG_MISC) += misc.o
+obj-$(CONFIG_DM_SERIAL) += serial.o
+obj-$(CONFIG_CPU) += cpu.o
 endif

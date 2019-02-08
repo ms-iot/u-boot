@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2017 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <i2c.h>
@@ -13,7 +12,7 @@
 #include <fsl_sec.h>
 #include <asm/io.h>
 #include <fdt_support.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <fsl-mc/fsl_mc.h>
 #include <environment.h>
 #include <asm/arch-fsl-layerscape/soc.h>
@@ -31,6 +30,9 @@ DECLARE_GLOBAL_DATA_PTR;
 
 int board_early_init_f(void)
 {
+#if defined(CONFIG_SYS_I2C_EARLY_INIT) && defined(CONFIG_TARGET_LS1088AQDS)
+	i2c_early_init_f();
+#endif
 	fsl_lsch3_early_init_f();
 	return 0;
 }
@@ -52,6 +54,16 @@ unsigned long long get_qixis_addr(void)
 	addr = addr  > 0x10000000 ? addr + 0x500000000ULL : addr + 0x30000000;
 
 	return addr;
+}
+#endif
+
+#if defined(CONFIG_VID)
+int init_func_vid(void)
+{
+	if (adjust_vdd(0) < 0)
+		printf("core voltage not adjusted\n");
+
+	return 0;
 }
 #endif
 
@@ -158,6 +170,7 @@ int checkboard(void)
 
 	return 0;
 }
+#endif
 
 bool if_board_diff_clk(void)
 {
@@ -211,7 +224,6 @@ unsigned long get_board_ddr_clk(void)
 
 	return 66666666;
 }
-#endif
 
 int select_i2c_ch_pca9547(u8 ch)
 {
@@ -357,6 +369,7 @@ int get_serdes_volt(void)
 		printf("VID: failed to read the volatge\n");
 		return ret;
 	}
+
 	return vcode;
 }
 
@@ -441,16 +454,6 @@ int board_adjust_vdd(int vdd)
 exit:
 	return ret;
 }
-
-#if defined(CONFIG_VID)
-int init_func_vid(void)
-{
-	if (adjust_vdd(0) < 0)
-		printf("core voltage not adjusted\n");
-
-	return 0;
-}
-#endif
 
 #if !defined(CONFIG_SPL_BUILD)
 int board_init(void)

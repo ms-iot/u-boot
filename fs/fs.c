@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <config.h>
@@ -113,7 +112,7 @@ struct fstype_info {
 	 * Is it legal to pass NULL as .probe()'s  fs_dev_desc parameter? This
 	 * should be false in most cases. For "virtual" filesystems which
 	 * aren't based on a U-Boot block device (e.g. sandbox), this can be
-	 * set to true. This should also be true for the dumm entry at the end
+	 * set to true. This should also be true for the dummy entry at the end
 	 * of fstypes[], since that is essentially a "virtual" (non-existent)
 	 * filesystem.
 	 */
@@ -266,6 +265,19 @@ static struct fstype_info *fs_get_info(int fstype)
 	return info;
 }
 
+/**
+ * fs_get_type_name() - Get type of current filesystem
+ *
+ * Return: Pointer to filesystem name
+ *
+ * Returns a string describing the current filesystem, or the sentinel
+ * "unsupported" for any unrecognised filesystem.
+ */
+const char *fs_get_type_name(void)
+{
+	return fs_get_info(fs_type)->name;
+}
+
 int fs_set_blk_dev(const char *ifname, const char *dev_part_str, int fstype)
 {
 	struct fstype_info *info;
@@ -407,7 +419,7 @@ int fs_read(const char *filename, ulong addr, loff_t offset, loff_t len,
 
 	/* If we requested a specific number of bytes, check we got it */
 	if (ret == 0 && len && *actread != len)
-		printf("** %s shorter than offset + len **\n", filename);
+		debug("** %s shorter than offset + len **\n", filename);
 	fs_close();
 
 	return ret;

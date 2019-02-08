@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Simple unit test library
  *
  * Copyright (c) 2013 Google, Inc
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __TEST_UT_H
@@ -87,6 +86,18 @@ void ut_failf(struct unit_test_state *uts, const char *fname, int line,
 		ut_failf(uts, __FILE__, __LINE__, __func__,		\
 			 #expr1 " = " #expr2,				\
 			 "Expected %p, got %p", val1, val2);		\
+		return CMD_RET_FAILURE;					\
+	}								\
+}
+
+/* Assert that a pointer is NULL */
+#define ut_assertnull(expr) {					\
+	const void *val = (expr);					\
+									\
+	if (val != NULL) {						\
+		ut_failf(uts, __FILE__, __LINE__, __func__,		\
+			 #expr " != NULL",				\
+			 "Expected NULL, got %p", val);		\
 		return CMD_RET_FAILURE;					\
 	}								\
 }

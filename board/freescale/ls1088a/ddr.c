@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2017 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -14,7 +13,7 @@
 DECLARE_GLOBAL_DATA_PTR;
 
 #if defined(CONFIG_VID) && (!defined(CONFIG_SPL) || defined(CONFIG_SPL_BUILD))
-void fsl_ddr_setup_0v9_volt(memctl_options_t *popts)
+static void fsl_ddr_setup_0v9_volt(memctl_options_t *popts)
 {
 	int vdd;
 
@@ -25,7 +24,7 @@ void fsl_ddr_setup_0v9_volt(memctl_options_t *popts)
 
 	if (vdd == 900) {
 		popts->ddr_cdr1 |= DDR_CDR1_V0PT9_EN;
-		printf("VID: configure DDR to support 900 mV\n");
+		debug("VID: configure DDR to support 900 mV\n");
 	}
 }
 #endif

@@ -52,6 +52,20 @@ config ATMEL_PIT_TIMER
 	  it is designed to offer maximum accuracy and efficient management,
 	  even for systems with long response time.
 
+config CADENCE_TTC_TIMER
+	bool "Cadence TTC (Triple Timer Counter)"
+	depends on TIMER
+	help
+	  Enables support for the cadence ttc driver. This driver is present
+	  on Xilinx Zynq and ZynqMP SoCs.
+
+config DESIGNWARE_APB_TIMER
+	bool "Designware APB Timer"
+	depends on TIMER
+	help
+	  Enables support for the Designware APB Timer driver. This timer is
+	  present on Altera SoCFPGA SoCs.
+
 config SANDBOX_TIMER
 	bool "Sandbox timer support"
 	depends on SANDBOX && TIMER
@@ -105,11 +119,12 @@ config AG101P_TIMER
 	help
 	  Select this to enable a timer for AG01P devices.
 
-config AE3XX_TIMER
-	bool "AE3XX timer support"
-	depends on TIMER && NDS32
+config ATCPIT100_TIMER
+	bool "ATCPIT100 timer support"
+	depends on TIMER
 	help
-	  Select this to enable a timer for AE3XX devices.
+	  Select this to enable a ATCPIT100 timer which will be embeded
+		in AE3XX, AE250 boards.
 
 config ROCKCHIP_TIMER
         bool "Rockchip timer support"
@@ -117,5 +132,19 @@ config ROCKCHIP_TIMER
 	help
 	  Select this to enable support for the timer found on
 	  Rockchip devices.
+
+config STM32_TIMER
+        bool "STM32 timer support"
+	depends on TIMER
+	help
+	  Select this to enable support for the timer found on
+	  STM32 devices.
+
+config MPC83XX_TIMER
+        bool "MPC83xx timer support"
+	depends on TIMER
+	help
+	  Select this to enable support for the timer found on
+	  devices based on the MPC83xx family of SoCs.
 
 endmenu

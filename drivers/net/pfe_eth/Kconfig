@@ -1,25 +1,12 @@
 menuconfig FSL_PFE
-	bool "Freescale PFE driver"
+	bool "NXP PFE Ethernet driver"
 	help
-	  This driver provides support for Freescale PFE.
+	  This driver provides support for NXP's Packet Forwarding Engine.
 
 if FSL_PFE
-
-config UTIL_PE_DISABLED
-	bool
-	help
-	  Disable UTIL processor engine of PFE
 
 config SYS_FSL_PFE_ADDR
 	hex "PFE base address"
 	default 0x04000000
-
-config DDR_PFE_PHYS_BASEADDR
-	hex "PFE DDR physical base address"
-	default 0x03800000
-
-config DDR_PFE_BASEADDR
-	hex "PFE DDR base address"
-	default 0x83800000
 
 endif

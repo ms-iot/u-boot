@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2015 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -11,8 +10,6 @@
 #include <sysreset.h>
 #include <asm/state.h>
 #include <asm/test.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 static int sandbox_warm_sysreset_request(struct udevice *dev,
 					 enum sysreset_t type)
@@ -30,6 +27,13 @@ static int sandbox_warm_sysreset_request(struct udevice *dev,
 		return -EACCES;
 
 	return -EINPROGRESS;
+}
+
+int sandbox_warm_sysreset_get_status(struct udevice *dev, char *buf, int size)
+{
+	strlcpy(buf, "Reset Status: WARM", size);
+
+	return 0;
 }
 
 static int sandbox_sysreset_request(struct udevice *dev, enum sysreset_t type)
@@ -63,8 +67,16 @@ static int sandbox_sysreset_request(struct udevice *dev, enum sysreset_t type)
 	return -EINPROGRESS;
 }
 
+int sandbox_sysreset_get_status(struct udevice *dev, char *buf, int size)
+{
+	strlcpy(buf, "Reset Status: COLD", size);
+
+	return 0;
+}
+
 static struct sysreset_ops sandbox_sysreset_ops = {
 	.request	= sandbox_sysreset_request,
+	.get_status	= sandbox_sysreset_get_status,
 };
 
 static const struct udevice_id sandbox_sysreset_ids[] = {
@@ -81,6 +93,7 @@ U_BOOT_DRIVER(sysreset_sandbox) = {
 
 static struct sysreset_ops sandbox_warm_sysreset_ops = {
 	.request	= sandbox_warm_sysreset_request,
+	.get_status	= sandbox_warm_sysreset_get_status,
 };
 
 static const struct udevice_id sandbox_warm_sysreset_ids[] = {

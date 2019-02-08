@@ -1,14 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2015 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <dm.h>
-#include <tpm.h>
 #include <linux/unaligned/be_byteshift.h>
+#include <tpm-v1.h>
+#include <tpm-v2.h>
 #include "tpm_internal.h"
 
 int tpm_open(struct udevice *dev)

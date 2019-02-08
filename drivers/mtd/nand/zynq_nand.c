@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2016 Xilinx, Inc.
  *
  * Xilinx Zynq NAND Flash Controller Driver
  * This driver is based on plat_nand.c and mxc_nand.c drivers
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -13,10 +12,11 @@
 #include <linux/errno.h>
 #include <nand.h>
 #include <linux/mtd/mtd.h>
-#include <linux/mtd/nand.h>
+#include <linux/mtd/rawnand.h>
 #include <linux/mtd/partitions.h>
 #include <linux/mtd/nand_ecc.h>
 #include <asm/arch/hardware.h>
+#include <asm/arch/sys_proto.h>
 
 /* The NAND flash driver defines */
 #define ZYNQ_NAND_CMD_PHASE		1
@@ -35,6 +35,8 @@
 				(0x1 << 4)   |	/* Clear interrupt */ \
 				(0x1 << 6))	/* Disable ECC interrupt */
 
+#ifndef CONFIG_NAND_ZYNQ_USE_BOOTLOADER1_TIMINGS
+
 /* Assuming 50MHz clock (20ns cycle time) and 3V operation */
 #define ZYNQ_NAND_SET_CYCLES	((0x2 << 20) |	/* t_rr from nand_cycles */ \
 				(0x2 << 17)  |	/* t_ar from nand_cycles */ \
@@ -43,6 +45,7 @@
 				(0x2 << 8)   |	/* t_rea from nand_cycles */ \
 				(0x5 << 4)   |	/* t_wc from nand_cycles */ \
 				(0x5 << 0))	/* t_rc from nand_cycles */
+#endif
 
 
 #define ZYNQ_NAND_DIRECT_CMD	((0x4 << 23) |	/* Chip 0 from interface 1 */ \
@@ -81,6 +84,25 @@
 #define ZYNQ_NAND_ECC_BUSY	(1 << 6)	/* ECC block is busy */
 #define ZYNQ_NAND_ECC_MASK	0x00FFFFFF	/* ECC value mask */
 
+#define ZYNQ_NAND_ROW_ADDR_CYCL_MASK	0x0F
+#define ZYNQ_NAND_COL_ADDR_CYCL_MASK	0xF0
+
+#define ZYNQ_NAND_MIO_NUM_NAND_8BIT	13
+#define ZYNQ_NAND_MIO_NUM_NAND_16BIT	8
+
+enum zynq_nand_bus_width {
+	NAND_BW_UNKNOWN = -1,
+	NAND_BW_8BIT,
+	NAND_BW_16BIT,
+};
+
+#ifndef NAND_CMD_LOCK_TIGHT
+#define NAND_CMD_LOCK_TIGHT 0x2c
+#endif
+
+#ifndef NAND_CMD_LOCK_STATUS
+#define NAND_CMD_LOCK_STATUS 0x7a
+#endif
 
 /* SMC register set */
 struct zynq_nand_smc_regs {
@@ -141,6 +163,11 @@ static const struct zynq_nand_command_format zynq_nand_commands[] = {
 	{NAND_CMD_PARAM, NAND_CMD_NONE, 1, 0},
 	{NAND_CMD_GET_FEATURES, NAND_CMD_NONE, 1, 0},
 	{NAND_CMD_SET_FEATURES, NAND_CMD_NONE, 1, 0},
+	{NAND_CMD_LOCK, NAND_CMD_NONE, 0, 0},
+	{NAND_CMD_LOCK_TIGHT, NAND_CMD_NONE, 0, 0},
+	{NAND_CMD_UNLOCK1, NAND_CMD_NONE, 3, 0},
+	{NAND_CMD_UNLOCK2, NAND_CMD_NONE, 3, 0},
+	{NAND_CMD_LOCK_STATUS, NAND_CMD_NONE, 3, 0},
 	{NAND_CMD_NONE, NAND_CMD_NONE, 0, 0},
 	/* Add all the flash commands supported by the flash device */
 };
@@ -245,8 +272,10 @@ static int zynq_nand_init_nand_flash(int option)
 
 	/* disable interrupts */
 	writel(ZYNQ_NAND_CLR_CONFIG, &zynq_nand_smc_base->cfr);
+#ifndef CONFIG_NAND_ZYNQ_USE_BOOTLOADER1_TIMINGS
 	/* Initialize the NAND interface by setting cycles and operation mode */
 	writel(ZYNQ_NAND_SET_CYCLES, &zynq_nand_smc_base->scr);
+#endif
 	if (option & NAND_BUSWIDTH_16)
 		writel(ZYNQ_NAND_SET_OPMODE_16BIT, &zynq_nand_smc_base->sor);
 	else
@@ -752,6 +781,7 @@ static void zynq_nand_cmd_function(struct mtd_info *mtd, unsigned int command,
 {
 	struct nand_chip *chip = mtd->priv;
 	const struct zynq_nand_command_format *curr_cmd = NULL;
+	u8 addr_cycles = 0;
 	struct zynq_nand_info *xnand = (struct zynq_nand_info *)chip->priv;
 	void *cmd_addr;
 	unsigned long cmd_data = 0;
@@ -802,8 +832,18 @@ static void zynq_nand_cmd_function(struct mtd_info *mtd, unsigned int command,
 	else
 		end_cmd = curr_cmd->end_cmd;
 
+	if (command == NAND_CMD_READ0 ||
+	    command == NAND_CMD_SEQIN) {
+		addr_cycles = chip->onfi_params.addr_cycles &
+				ZYNQ_NAND_ROW_ADDR_CYCL_MASK;
+		addr_cycles += ((chip->onfi_params.addr_cycles &
+				ZYNQ_NAND_COL_ADDR_CYCL_MASK) >> 4);
+	} else {
+		addr_cycles = curr_cmd->addr_cycles;
+	}
+
 	cmd_phase_addr = (unsigned long)xnand->nand_base	|
-			(curr_cmd->addr_cycles << ADDR_CYCLES_SHIFT)	|
+			(addr_cycles << ADDR_CYCLES_SHIFT)	|
 			(end_cmd_valid << END_CMD_VALID_SHIFT)		|
 			(COMMAND_PHASE)					|
 			(end_cmd << END_CMD_SHIFT)			|
@@ -989,6 +1029,23 @@ static int zynq_nand_device_ready(struct mtd_info *mtd)
 	return 0;
 }
 
+static int zynq_nand_check_is_16bit_bw_flash(void)
+{
+	int is_16bit_bw = NAND_BW_UNKNOWN;
+	int mio_num_8bit = 0, mio_num_16bit = 0;
+
+	mio_num_8bit = zynq_slcr_get_mio_pin_status("nand8");
+	if (mio_num_8bit == ZYNQ_NAND_MIO_NUM_NAND_8BIT)
+		is_16bit_bw = NAND_BW_8BIT;
+
+	mio_num_16bit = zynq_slcr_get_mio_pin_status("nand16");
+	if (mio_num_8bit == ZYNQ_NAND_MIO_NUM_NAND_8BIT &&
+	    mio_num_16bit == ZYNQ_NAND_MIO_NUM_NAND_16BIT)
+		is_16bit_bw = NAND_BW_16BIT;
+
+	return is_16bit_bw;
+}
+
 static int zynq_nand_init(struct nand_chip *nand_chip, int devnum)
 {
 	struct zynq_nand_info *xnand;
@@ -1000,6 +1057,7 @@ static int zynq_nand_init(struct nand_chip *nand_chip, int devnum)
 	unsigned long ecc_cfg;
 	int ondie_ecc_enabled = 0;
 	int err = -1;
+	int is_16bit_bw;
 
 	xnand = calloc(1, sizeof(struct zynq_nand_info));
 	if (!xnand) {
@@ -1008,7 +1066,7 @@ static int zynq_nand_init(struct nand_chip *nand_chip, int devnum)
 	}
 
 	xnand->nand_base = (void __iomem *)ZYNQ_NAND_BASEADDR;
-	mtd = get_nand_dev_by_index(0);
+	mtd = nand_to_mtd(nand_chip);
 
 	nand_chip->priv = xnand;
 	mtd->priv = nand_chip;
@@ -1028,6 +1086,16 @@ static int zynq_nand_init(struct nand_chip *nand_chip, int devnum)
 	/* Buffer read/write routines */
 	nand_chip->read_buf = zynq_nand_read_buf;
 	nand_chip->write_buf = zynq_nand_write_buf;
+
+	is_16bit_bw = zynq_nand_check_is_16bit_bw_flash();
+	if (is_16bit_bw == NAND_BW_UNKNOWN) {
+		printf("%s: Unable detect NAND based on MIO settings\n",
+		       __func__);
+		goto fail;
+	}
+
+	if (is_16bit_bw == NAND_BW_16BIT)
+		nand_chip->options = NAND_BUSWIDTH_16;
 
 	nand_chip->bbt_options = NAND_BBT_USE_FLASH;
 

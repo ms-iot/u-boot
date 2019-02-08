@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015-2016 Freescale Semiconductor, Inc.
  * Copyright 2017 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -11,8 +10,11 @@
  * files.
  */
 
-#include <pfe_eth/pfe_eth.h>
-#include <pfe_eth/pfe_firmware.h>
+#include <net/pfe_eth/pfe_eth.h>
+#include <net/pfe_eth/pfe_firmware.h>
+#ifdef CONFIG_CHAIN_OF_TRUST
+#include <fsl_validate.h>
+#endif
 
 #define PFE_FIRMEWARE_FIT_CNF_NAME	"config@1"
 
@@ -169,16 +171,42 @@ static int pfe_fit_check(void)
  */
 int pfe_firmware_init(void)
 {
+#define PFE_KEY_HASH	NULL
 	char *pfe_firmware_name;
 	const void *raw_image_addr;
 	size_t raw_image_size = 0;
 	u8 *pfe_firmware;
+#ifdef CONFIG_CHAIN_OF_TRUST
+	uintptr_t pfe_esbc_hdr = 0;
+	uintptr_t pfe_img_addr = 0;
+#endif
 	int ret = 0;
 	int fw_count;
 
 	ret = pfe_fit_check();
 	if (ret)
 		goto err;
+
+#ifdef CONFIG_CHAIN_OF_TRUST
+	pfe_esbc_hdr = CONFIG_SYS_LS_PFE_ESBC_ADDR;
+	pfe_img_addr = (uintptr_t)pfe_fit_addr;
+	if (fsl_check_boot_mode_secure() != 0) {
+		/*
+		 * In case of failure in validation, fsl_secboot_validate
+		 * would not return back in case of Production environment
+		 * with ITS=1. In Development environment (ITS=0 and
+		 * SB_EN=1), the function may return back in case of
+		 * non-fatal failures.
+		 */
+		ret = fsl_secboot_validate(pfe_esbc_hdr,
+					   PFE_KEY_HASH,
+					   &pfe_img_addr);
+		if (ret != 0)
+			printf("PFE firmware(s) validation failed\n");
+		else
+			printf("PFE firmware(s) validation Successful\n");
+	}
+#endif
 
 	for (fw_count = 0; fw_count < 2; fw_count++) {
 		if (fw_count == 0)
@@ -188,6 +216,8 @@ int pfe_firmware_init(void)
 
 		pfe_get_fw(&raw_image_addr, &raw_image_size, pfe_firmware_name);
 		pfe_firmware = malloc(raw_image_size);
+		if (!pfe_firmware)
+			return -ENOMEM;
 		memcpy((void *)pfe_firmware, (void *)raw_image_addr,
 		       raw_image_size);
 
@@ -218,7 +248,8 @@ err:
  * Puts PE's in reset
  */
 void pfe_firmware_exit(void)
-{ debug("%s\n", __func__);
+{
+	debug("%s\n", __func__);
 
 	class_disable();
 	tmu_disable(0xf);

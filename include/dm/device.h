@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2013 Google, Inc
  *
  * (C) Copyright 2012
  * Pavel Herrmann <morpheus.ibis@gmail.com>
  * Marek Vasut <marex@denx.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _DM_DEVICE_H
@@ -203,7 +202,7 @@ struct udevice_id {
  * it.
  *
  * @name: Device name
- * @id: Identiies the uclass we belong to
+ * @id: Identifies the uclass we belong to
  * @of_match: List of compatible strings to match, and any identifying data
  * for each.
  * @bind: Called to bind a device to its driver
@@ -474,18 +473,33 @@ int device_get_child_by_of_offset(struct udevice *parent, int of_offset,
 				  struct udevice **devp);
 
 /**
- * device_get_global_by_of_offset() - Get a device based on FDT offset
+ * device_find_global_by_ofnode() - Get a device based on ofnode
  *
- * Locates a device by its device tree offset, searching globally throughout
+ * Locates a device by its device tree ofnode, searching globally throughout
+ * the all driver model devices.
+ *
+ * The device is NOT probed
+ *
+ * @node: Device tree ofnode to find
+ * @devp: Returns pointer to device if found, otherwise this is set to NULL
+ * @return 0 if OK, -ve on error
+ */
+
+int device_find_global_by_ofnode(ofnode node, struct udevice **devp);
+
+/**
+ * device_get_global_by_ofnode() - Get a device based on ofnode
+ *
+ * Locates a device by its device tree ofnode, searching globally throughout
  * the all driver model devices.
  *
  * The device is probed to activate it ready for use.
  *
- * @of_offset: Device tree offset to find
+ * @node: Device tree ofnode to find
  * @devp: Returns pointer to device if found, otherwise this is set to NULL
  * @return 0 if OK, -ve on error
  */
-int device_get_global_by_of_offset(int of_offset, struct udevice **devp);
+int device_get_global_by_ofnode(ofnode node, struct udevice **devp);
 
 /**
  * device_find_first_child() - Find the first child of a device

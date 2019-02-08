@@ -1,19 +1,12 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2017 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __LS1088A_RDB_H
 #define __LS1088A_RDB_H
 
 #include "ls1088a_common.h"
-
-#ifndef SPL_NO_BOARDINFO
-#define CONFIG_DISPLAY_BOARDINFO_LATE
-#endif
-
-#define CONFIG_MISC_INIT_R
 
 #if defined(CONFIG_QSPI_BOOT)
 #define CONFIG_ENV_SIZE			0x2000          /* 8KB */
@@ -285,13 +278,13 @@
 #ifndef SPL_NO_QSPI
 /* QSPI device */
 #if defined(CONFIG_QSPI_BOOT) || defined(CONFIG_SD_BOOT_QSPI)
+#define CONFIG_FSL_QSPI
 #define FSL_QSPI_FLASH_SIZE		(1 << 26)
 #define FSL_QSPI_FLASH_NUM		2
 #endif
 #endif
 
 #define CONFIG_CMD_MEMINFO
-#define CONFIG_CMD_MEMTEST
 #define CONFIG_SYS_MEMTEST_START	0x80000000
 #define CONFIG_SYS_MEMTEST_END		0x9fffffff
 
@@ -386,8 +379,8 @@
 	"installer=load mmc 0:2 $load_addr "			\
 		"/flex_installer_arm64.itb; "			\
 		"env exists mcinitcmd && run mcinitcmd && "	\
-		"mmc read 0x80200000 0x6800 0x800;"		\
-		"fsl_mc apply dpl 0x80200000;"			\
+		"mmc read 0x80001000 0x6800 0x800;"		\
+		"fsl_mc lazyapply dpl 0x80001000;"			\
 		"bootm $load_addr#ls1088ardb\0"			\
 	"qspi_bootcmd=echo Trying load from qspi..;"		\
 		"sf probe && sf read $load_addr "		\
@@ -407,11 +400,11 @@
 #if defined(CONFIG_QSPI_BOOT)
 /* Try to boot an on-QSPI kernel first, then do normal distro boot */
 #define CONFIG_BOOTCOMMAND                                      \
-		"sf read 0x80200000 0xd00000 0x100000;"		\
+		"sf read 0x80001000 0xd00000 0x100000;"		\
 		"env exists mcinitcmd && env exists secureboot "	\
 		" && sf read 0x80780000 0x780000 0x100000 "	\
 		"&& esbc_validate 0x80780000;env exists mcinitcmd "	\
-		"&& fsl_mc apply dpl 0x80200000;"		\
+		"&& fsl_mc lazyapply dpl 0x80001000;"		\
 		"run distro_bootcmd;run qspi_bootcmd;"		\
 		"env exists secureboot && esbc_halt;"
 
@@ -419,11 +412,11 @@
 #elif defined(CONFIG_SD_BOOT)
 #define CONFIG_BOOTCOMMAND                                      \
 		"env exists mcinitcmd && mmcinfo; "		\
-		"mmc read 0x80200000 0x6800 0x800; "		\
+		"mmc read 0x80001000 0x6800 0x800; "		\
 		"env exists mcinitcmd && env exists secureboot "	\
-		" && mmc read 0x80780000 0x3800 0x10 "		\
+		" && mmc read 0x80780000 0x3C00 0x10 "		\
 		"&& esbc_validate 0x80780000;env exists mcinitcmd "	\
-		"&& fsl_mc apply dpl 0x80200000;"		\
+		"&& fsl_mc lazyapply dpl 0x80001000;"		\
 		"run distro_bootcmd;run sd_bootcmd;"		\
 		"env exists secureboot && esbc_halt;"
 #endif
@@ -448,7 +441,6 @@
 #define QSGMII2_PORT3_PHY_ADDR		0x1e
 #define QSGMII2_PORT4_PHY_ADDR		0x1f
 
-#define CONFIG_MII
 #define CONFIG_ETHPRIME		"DPMAC1@xgmii"
 #define CONFIG_PHY_GIGE
 #endif
@@ -456,18 +448,14 @@
 
 /*  MMC  */
 #ifdef CONFIG_MMC
-#define CONFIG_FSL_ESDHC
 #define CONFIG_SYS_FSL_MMC_HAS_CAPBLT_VS33
 #endif
 
 #ifndef SPL_NO_ENV
-#undef CONFIG_CMDLINE_EDITING
-#include <config_distro_defaults.h>
 
 #define BOOT_TARGET_DEVICES(func) \
 	func(MMC, mmc, 0) \
-	func(SCSI, scsi, 0) \
-	func(DHCP, dhcp, na)
+	func(SCSI, scsi, 0)
 #include <config_distro_bootcmd.h>
 #endif
 

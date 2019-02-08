@@ -1,10 +1,9 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Configuration file for the SAMA5D27 SOM1 EK Board.
  *
  * Copyright (C) 2017 Microchip Corporation
  *		      Wenyou Yang <wenyou.yang@microchip.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_H
@@ -12,15 +11,10 @@
 
 #include "at91-sama5_common.h"
 
-#undef CONFIG_SYS_TEXT_BASE
 #undef CONFIG_SYS_AT91_MAIN_CLOCK
-#define CONFIG_SYS_TEXT_BASE		0x23f00000
 #define CONFIG_SYS_AT91_MAIN_CLOCK      24000000 /* from 24 MHz crystal */
 
-#define CONFIG_MISC_INIT_R
-
 /* SDRAM */
-#define CONFIG_NR_DRAM_BANKS		1
 #define CONFIG_SYS_SDRAM_BASE		0x20000000
 #define CONFIG_SYS_SDRAM_SIZE		0x8000000
 
@@ -69,7 +63,6 @@
 #endif
 
 /* SPL */
-#define CONFIG_SPL_FRAMEWORK
 #define CONFIG_SPL_TEXT_BASE		0x200000
 #define CONFIG_SPL_MAX_SIZE		0x10000
 #define CONFIG_SPL_BSS_START_ADDR	0x20000000
@@ -85,7 +78,6 @@
 #endif
 
 #ifdef CONFIG_QSPI_BOOT
-#define CONFIG_SPL_SPI_LOAD
 #define CONFIG_SYS_SPI_U_BOOT_OFFS	0x10000
 #endif
 

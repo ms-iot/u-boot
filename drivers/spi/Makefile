@@ -1,9 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0+
 #
 # (C) Copyright 2000-2007
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
-#
-# SPDX-License-Identifier:	GPL-2.0+
-#
 
 # There are many options which enable SPI, so make this library available
 ifdef CONFIG_DM_SPI
@@ -18,6 +16,9 @@ endif
 obj-$(CONFIG_ALTERA_SPI) += altera_spi.o
 obj-$(CONFIG_ATH79_SPI) += ath79_spi.o
 obj-$(CONFIG_ATMEL_SPI) += atmel_spi.o
+obj-$(CONFIG_BCM63XX_HSSPI) += bcm63xx_hsspi.o
+obj-$(CONFIG_BCM63XX_SPI) += bcm63xx_spi.o
+obj-$(CONFIG_BCMSTB_SPI) += bcmstb_spi.o
 obj-$(CONFIG_CADENCE_QSPI) += cadence_qspi.o cadence_qspi_apb.o
 obj-$(CONFIG_CF_SPI) += cf_spi.o
 obj-$(CONFIG_DAVINCI_SPI) += davinci_spi.o
@@ -34,14 +35,16 @@ obj-$(CONFIG_MPC8XXX_SPI) += mpc8xxx_spi.o
 obj-$(CONFIG_MVEBU_A3700_SPI) += mvebu_a3700_spi.o
 obj-$(CONFIG_MXC_SPI) += mxc_spi.o
 obj-$(CONFIG_MXS_SPI) += mxs_spi.o
-obj-$(CONFIG_NDS_AE3XX_SPI) += nds_ae3xx_spi.o
+obj-$(CONFIG_ATCSPI200_SPI) += atcspi200_spi.o
 obj-$(CONFIG_OMAP3_SPI) += omap3_spi.o
 obj-$(CONFIG_PIC32_SPI) += pic32_spi.o
+obj-$(CONFIG_RENESAS_RPC_SPI) += renesas_rpc_spi.o
 obj-$(CONFIG_ROCKCHIP_SPI) += rk_spi.o
 obj-$(CONFIG_SANDBOX_SPI) += sandbox_spi.o
 obj-$(CONFIG_SH_SPI) += sh_spi.o
 obj-$(CONFIG_SH_QSPI) += sh_qspi.o
 obj-$(CONFIG_STM32_QSPI) += stm32_qspi.o
+obj-$(CONFIG_SUN4I_SPI) += sun4i_spi.o
 obj-$(CONFIG_TEGRA114_SPI) += tegra114_spi.o
 obj-$(CONFIG_TEGRA20_SFLASH) += tegra20_sflash.o
 obj-$(CONFIG_TEGRA20_SLINK) += tegra20_slink.o
@@ -50,3 +53,4 @@ obj-$(CONFIG_TI_QSPI) += ti_qspi.o
 obj-$(CONFIG_XILINX_SPI) += xilinx_spi.o
 obj-$(CONFIG_ZYNQ_SPI) += zynq_spi.o
 obj-$(CONFIG_ZYNQ_QSPI) += zynq_qspi.o
+obj-$(CONFIG_ZYNQMP_GQSPI) += zynqmp_gqspi.o

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Most of this source has been derived from the Linux USB
  * project:
@@ -13,8 +14,6 @@
  *
  * Adapted for U-Boot:
  * (C) Copyright 2001 Denis Peter, MPL AG Switzerland
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -222,9 +221,6 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe,
 		/* request for a asynch control pipe is not allowed */
 		return -EINVAL;
 	}
-
-	/* Add delay to support more devices' enumeration */
-	mdelay(10);
 
 	/* set setup command */
 	setup_packet->requesttype = requesttype;

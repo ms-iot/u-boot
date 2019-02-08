@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2016 Freescale Semiconductor
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __LS1012A_COMMON_H
@@ -12,12 +11,6 @@
 
 #include <asm/arch/config.h>
 #include <asm/arch/stream_id_lsch2.h>
-
-#define CONFIG_SUPPORT_RAW_INITRD
-
-#define CONFIG_DISPLAY_BOARDINFO_LATE
-
-#define CONFIG_SYS_TEXT_BASE		0x40100000
 
 #define CONFIG_SYS_CLK_FREQ		125000000
 
@@ -70,8 +63,6 @@
 #endif
 
 /* SATA */
-#define CONFIG_LIBATA
-#define CONFIG_SCSI_AHCI
 #define CONFIG_SCSI_AHCI_PLAT
 
 #define CONFIG_SYS_SATA				AHCI_BASE_ADDR
@@ -83,11 +74,7 @@
 
 /* I2C */
 #define CONFIG_SYS_I2C
-#define CONFIG_SYS_I2C_MXC
-#define CONFIG_SYS_I2C_MXC_I2C1		/* enable I2C bus 1 */
-#define CONFIG_SYS_I2C_MXC_I2C2		/* enable I2C bus 2 */
 
-#define CONFIG_CONS_INDEX       1
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_REG_SIZE     1
 #define CONFIG_SYS_NS16550_CLK          (get_serial_clock())
@@ -99,12 +86,11 @@
 #define CONFIG_HWCONFIG
 #define HWCONFIG_BUFFER_SIZE		128
 
-#include <config_distro_defaults.h>
 #ifndef CONFIG_SPL_BUILD
 #define BOOT_TARGET_DEVICES(func) \
+	func(SCSI, scsi, 0) \
 	func(MMC, mmc, 0) \
-	func(USB, usb, 0) \
-	func(SCSI, scsi, 0)
+	func(USB, usb, 0)
 #include <config_distro_bootcmd.h>
 #endif
 
@@ -126,11 +112,8 @@
 
 /* Monitor Command Prompt */
 #define CONFIG_SYS_CBSIZE		512	/* Console I/O Buffer Size */
-#define CONFIG_SYS_LONGHELP
-#define CONFIG_AUTO_COMPLETE
 #define CONFIG_SYS_MAXARGS		64	/* max command args */
 
-#define CONFIG_PANIC_HANG
 #define CONFIG_SYS_BOOTM_LEN   (64 << 20)      /* Increase max gunzip size */
 
 #include <asm/arch/soc.h>

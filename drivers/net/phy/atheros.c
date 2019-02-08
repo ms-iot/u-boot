@@ -1,11 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Atheros PHY drivers
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * Copyright 2011, 2013 Freescale Semiconductor, Inc.
  * author Andy Fleming
  */
+#include <common.h>
 #include <phy.h>
 
 #define AR803x_PHY_DEBUG_ADDR_REG	0x1d

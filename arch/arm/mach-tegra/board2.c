@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  *  (C) Copyright 2010,2011
  *  NVIDIA Corporation <www.nvidia.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -250,6 +249,10 @@ static ulong carveout_size(void)
 {
 #ifdef CONFIG_ARM64
 	return SZ_512M;
+#elif defined(CONFIG_ARMV7_SECURE_RESERVE_SIZE)
+	// BASE+SIZE might not == 4GB. If so, we want the carveout to cover
+	// from BASE to 4GB, not BASE to BASE+SIZE.
+	return (0 - CONFIG_ARMV7_SECURE_BASE) & ~(SZ_2M - 1);
 #else
 	return 0;
 #endif

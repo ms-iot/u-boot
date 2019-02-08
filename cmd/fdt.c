@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2007
  * Gerald Van Baren, Custom IDEAS, vanbaren@cideas.com
  * Based on code written by:
  *   Pantelis Antoniou <pantelis.antoniou@gmail.com> and
  *   Matthew McClintock <msm@freescale.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -13,7 +12,7 @@
 #include <linux/ctype.h>
 #include <linux/types.h>
 #include <asm/global_data.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <fdt_support.h>
 #include <mapmem.h>
 #include <asm/io.h>
@@ -256,7 +255,7 @@ static int do_fdt(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		char *pathp;		/* path */
 		char *prop;		/* property */
 		int  nodeoffset;	/* node offset from libfdt */
-		static char data[SCRATCHPAD];	/* storage for the property */
+		static char data[SCRATCHPAD] __aligned(4);/* property storage */
 		const void *ptmp;
 		int  len;		/* new length of the property */
 		int  ret;		/* return value */

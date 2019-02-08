@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2017 NXP
  * Copyright 2015 Freescale Semiconductor
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __LS2_QDS_H
@@ -46,8 +45,6 @@ unsigned long get_board_ddr_clk(void);
 #define CONFIG_FSL_DDR_BIST	/* enable built-in memory test */
 
 /* SATA */
-#define CONFIG_LIBATA
-#define CONFIG_SCSI_AHCI
 #define CONFIG_SCSI_AHCI_PLAT
 
 #define CONFIG_SYS_SATA1			AHCI_BASE_ADDR1
@@ -345,7 +342,6 @@ unsigned long get_board_ddr_clk(void);
 
 /*  MMC  */
 #ifdef CONFIG_MMC
-#define CONFIG_FSL_ESDHC
 #define CONFIG_SYS_FSL_MMC_HAS_CAPBLT_VS33
 #endif
 
@@ -430,7 +426,6 @@ unsigned long get_board_ddr_clk(void);
 #define XQSGMII_CARD_PHY4_PORT2_ADDR 0xe
 #define XQSGMII_CARD_PHY4_PORT3_ADDR 0xf
 
-#define CONFIG_MII		/* MII PHY management */
 #define CONFIG_ETHPRIME		"DPMAC1@xgmii"
 
 #endif

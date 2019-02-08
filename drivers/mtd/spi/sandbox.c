@@ -24,8 +24,6 @@
 #include <dm/lists.h>
 #include <dm/uclass-internal.h>
 
-DECLARE_GLOBAL_DATA_PTR;
-
 /*
  * The different states that our SPI flash transitions between.
  * We need to keep track of this across multiple xfer calls since
@@ -558,7 +556,7 @@ static int sandbox_cmdline_cb_spi_sf(struct sandbox_state *state,
 SANDBOX_CMDLINE_OPT(spi_sf, 1, "connect a SPI flash: <bus>:<cs>:<id>:<file>");
 
 int sandbox_sf_bind_emul(struct sandbox_state *state, int busnum, int cs,
-			 struct udevice *bus, int of_offset, const char *spec)
+			 struct udevice *bus, ofnode node, const char *spec)
 {
 	struct udevice *emul;
 	char name[20], *str;
@@ -569,16 +567,17 @@ int sandbox_sf_bind_emul(struct sandbox_state *state, int busnum, int cs,
 	strncpy(name, spec, sizeof(name) - 6);
 	name[sizeof(name) - 6] = '\0';
 	strcat(name, "-emul");
-	str = strdup(name);
-	if (!str)
-		return -ENOMEM;
 	drv = lists_driver_lookup_name("sandbox_sf_emul");
 	if (!drv) {
 		puts("Cannot find sandbox_sf_emul driver\n");
 		return -ENOENT;
 	}
-	ret = device_bind(bus, drv, str, NULL, of_offset, &emul);
+	str = strdup(name);
+	if (!str)
+		return -ENOMEM;
+	ret = device_bind_ofnode(bus, drv, str, NULL, node, &emul);
 	if (ret) {
+		free(str);
 		printf("Cannot create emul device for spec '%s' (err=%d)\n",
 		       spec, ret);
 		return ret;
@@ -621,7 +620,8 @@ static int sandbox_sf_bind_bus_cs(struct sandbox_state *state, int busnum,
 	if (ret)
 		return ret;
 
-	return sandbox_sf_bind_emul(state, busnum, cs, bus, -1, spec);
+	return sandbox_sf_bind_emul(state, busnum, cs, bus, ofnode_null(),
+				    spec);
 }
 
 int sandbox_spi_get_emul(struct sandbox_state *state,
@@ -639,7 +639,7 @@ int sandbox_spi_get_emul(struct sandbox_state *state,
 		debug("%s: busnum=%u, cs=%u: binding SPI flash emulation: ",
 		      __func__, busnum, cs);
 		ret = sandbox_sf_bind_emul(state, busnum, cs, bus,
-					   dev_of_offset(slave), slave->name);
+					   dev_ofnode(slave), slave->name);
 		if (ret) {
 			debug("failed (err=%d)\n", ret);
 			return ret;

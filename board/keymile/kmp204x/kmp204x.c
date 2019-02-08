@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013 Keymile AG
  * Valentin Longchamp <valentin.longchamp@keymile.com>
  *
  * Copyright 2011,2012 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -23,8 +22,6 @@
 
 #include "../common/common.h"
 #include "kmp204x.h"
-
-DECLARE_GLOBAL_DATA_PTR;
 
 static uchar ivm_content[CONFIG_SYS_IVM_EEPROM_MAX_LEN];
 

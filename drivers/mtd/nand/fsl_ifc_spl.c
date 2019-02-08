@@ -1,16 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * NAND boot for Freescale Integrated Flash Controller, NAND FCM
  *
  * Copyright 2011 Freescale Semiconductor, Inc.
  * Author: Dipen Dudhat <dipen.dudhat@freescale.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/io.h>
 #include <fsl_ifc.h>
-#include <linux/mtd/nand.h>
+#include <linux/mtd/rawnand.h>
 #ifdef CONFIG_CHAIN_OF_TRUST
 #include <fsl_validate.h>
 #endif

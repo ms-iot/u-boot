@@ -156,6 +156,15 @@ config VIDEO_COREBOOT
 	  coreboot already. This can in principle be used with any platform
 	  that coreboot supports.
 
+config VIDEO_EFI
+	bool "Enable EFI framebuffer driver support"
+	depends on EFI_STUB
+	help
+	  Turn on this option to enable a framebuffeer driver when U-Boot is
+	  loaded as a payload (see README.u-boot_on_efi) by an EFI BIOS where
+	  the graphics device is configured by the EFI BIOS already. This can
+	  in principle be used with any platform that has an EFI BIOS.
+
 config VIDEO_VESA
 	bool "Enable VESA video driver support"
 	default n
@@ -174,7 +183,7 @@ config FRAMEBUFFER_SET_VESA_MODE
 
 choice
 	prompt "framebuffer graphics resolution"
-	default FRAMEBUFFER_VESA_MODE_117
+	default FRAMEBUFFER_VESA_MODE_118
 	depends on FRAMEBUFFER_SET_VESA_MODE
 	help
 	  This option sets the resolution used for the U-Boot framebuffer (and
@@ -399,9 +408,14 @@ config VIDEO_MVEBU
 	Support for the LCD controller integrated in the Marvell
 	Armada XP SoC.
 
+config VIDEO_OMAP3
+	bool "Enable OMAP3+ DSS Support"
+	depends on ARCH_OMAP2PLUS
+	help
+	  This enables the Display subsystem (DSS) on OMAP3+ boards.
+
 config I2C_EDID
 	bool "Enable EDID library"
-	depends on DM_I2C
 	default n
 	help
 	   This enables library for accessing EDID data from an LCD panel.
@@ -422,6 +436,17 @@ config ATMEL_HLCD
 	depends on DM_VIDEO
 	help
 	   HLCDC supports video output to an attached LCD panel.
+
+config LOGICORE_DP_TX
+	bool "Enable Logicore DP TX driver"
+	depends on DISPLAY
+	help
+	  Enable the driver for the transmitter part of the Xilinx LogiCORE
+	  DisplayPort, a IP core for Xilinx FPGAs that implements a DisplayPort
+	  video interface as defined by VESA DisplayPort v1.2.
+
+	  Note that this is a pure transmitter device, and has no display
+	  capabilities by itself.
 
 config VIDEO_BROADWELL_IGD
 	bool "Enable Intel Broadwell integrated graphics device"

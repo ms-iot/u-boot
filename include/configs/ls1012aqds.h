@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2016 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __LS1012AQDS_H__
@@ -9,27 +8,11 @@
 
 #include "ls1012a_common.h"
 
-/* PFE Ethernet */
-#ifdef CONFIG_FSL_PFE
-#define EMAC1_PHY_ADDR          0x1e
-#define EMAC2_PHY_ADDR          0x1
-#define	SGMII_2500_PHY1_ADDR	0x1
-#define	SGMII_2500_PHY2_ADDR	0x2
-#define CONFIG_PHYLIB
-#define CONFIG_PHY_VITESSE
-#define CONFIG_PHY_REALTEK
-#define	CONFIG_PHY_AQUANTIA
-#define	CONFIG_PHYLIB_10G
-#define RGMII_RESET_WA
-#endif
-
 /* DDR */
 #define CONFIG_DIMM_SLOTS_PER_CTLR	1
 #define CONFIG_CHIP_SELECTS_PER_CTRL	1
-#define CONFIG_NR_DRAM_BANKS		2
 #define CONFIG_SYS_SDRAM_SIZE		0x40000000
 #define CONFIG_CMD_MEMINFO
-#define CONFIG_CMD_MEMTEST
 #define CONFIG_SYS_MEMTEST_START	0x80000000
 #define CONFIG_SYS_MEMTEST_END		0x9fffffff
 
@@ -123,7 +106,6 @@
 
 /*  MMC  */
 #ifdef CONFIG_MMC
-#define CONFIG_FSL_ESDHC
 #define CONFIG_SYS_FSL_MMC_HAS_CAPBLT_VS33
 #endif
 
@@ -132,10 +114,7 @@
 #define CONFIG_PCI_SCAN_SHOW
 
 #define CONFIG_CMD_MEMINFO
-#define CONFIG_CMD_MEMTEST
 #define CONFIG_SYS_MEMTEST_START	0x80000000
 #define CONFIG_SYS_MEMTEST_END		0x9fffffff
-
-#define CONFIG_MISC_INIT_R
 
 #endif /* __LS1012AQDS_H__ */

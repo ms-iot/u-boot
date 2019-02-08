@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  *  U-Boot - x86 Startup Code
  *
@@ -6,8 +7,6 @@
  *
  * (C) Copyright 2002
  * Daniel Engström, Omicron Ceti AB, <daniel@omicron.se>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <config.h>
@@ -18,7 +17,7 @@
 #include <generated/generic-asm-offsets.h>
 #include <generated/asm-offsets.h>
 
-.section .text
+.section .text.start
 .code32
 .globl _start
 .type _start, @function

@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * This file is part of UBIFS.
  *
  * Copyright (C) 2006-2008 Nokia Corporation
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * Authors: Artem Bityutskiy (Битюцкий Артём)
  *          Adrian Hunter
@@ -275,7 +274,9 @@ static inline void ubifs_get_lprops(struct ubifs_info *c)
  */
 static inline void ubifs_release_lprops(struct ubifs_info *c)
 {
-//	ubifs_assert(mutex_is_locked(&c->lp_mutex));
+#ifndef __UBOOT__
+	ubifs_assert(mutex_is_locked(&c->lp_mutex));
+#endif
 	ubifs_assert(c->lst.empty_lebs >= 0 &&
 		     c->lst.empty_lebs <= c->main_lebs);
 	mutex_unlock(&c->lp_mutex);

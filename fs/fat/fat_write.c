@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * fat_write.c
  *
  * R/W (V)FAT 12/16/32 filesystem implementation by Donggeun Kim
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -819,8 +818,7 @@ static dir_entry *find_directory_entry(fsdata *mydata, int startsect,
 				continue;
 			}
 			if ((dentptr->attr & ATTR_VOLUME)) {
-				if (vfat_enabled &&
-				    (dentptr->attr & ATTR_VFAT) &&
+				if ((dentptr->attr & ATTR_VFAT) &&
 				    (dentptr->name[0] & LAST_LONG_ENTRY_MASK)) {
 					get_long_file_name(mydata, curclust,
 						     get_dentfromdir_block,
@@ -842,8 +840,8 @@ static dir_entry *find_directory_entry(fsdata *mydata, int startsect,
 
 			get_name(dentptr, s_name);
 
-			if (strcmp(filename, s_name)
-			    && strcmp(filename, l_name)) {
+			if (strncasecmp(filename, s_name, sizeof(s_name)) &&
+			    strncasecmp(filename, l_name, sizeof(l_name))) {
 				debug("Mismatch: |%s|%s|\n",
 					s_name, l_name);
 				dentptr++;
@@ -911,9 +909,11 @@ static int do_fat_write(const char *filename, void *buffer, loff_t size,
 	volume_info volinfo;
 	fsdata datablock;
 	fsdata *mydata = &datablock;
-	int cursect;
+	int cursect, i;
 	int ret = -1, name_len;
 	char l_filename[VFAT_MAXLEN_BYTES];
+	char bad[2] = " ";
+	const char illegal[] = "<>:\"/\\|?*";
 
 	*actwrite = size;
 	dir_curclust = 0;
@@ -972,6 +972,18 @@ static int do_fat_write(const char *filename, void *buffer, loff_t size,
 		goto exit;
 	}
 	dentptr = (dir_entry *) do_fat_read_at_block;
+
+	/* Strip leading (back-)slashes */
+	while ISDIRDELIM(*filename)
+		++filename;
+	/* Check that the filename is valid */
+	for (i = 0; i < strlen(illegal); ++i) {
+		*bad = illegal[i];
+		if (strstr(filename, bad)) {
+			printf("FAT: illegal filename (%s)\n", filename);
+			return -1;
+		}
+	}
 
 	name_len = strlen(filename);
 	if (name_len >= VFAT_MAXLEN_BYTES)

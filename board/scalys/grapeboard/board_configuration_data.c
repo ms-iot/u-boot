@@ -7,18 +7,15 @@
 
 #include <common.h>
 #include <linux/ctype.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <fdt_support.h>
-
 #include <spi.h>
 #include <spi_flash.h>
 #include <linux/errno.h>
 #include <malloc.h>
 #include <asm/io.h>
 #include <dm.h>
-#include <malloc.h>
 #include <mapmem.h>
-#include <spi.h>
 #include <dm/device-internal.h>
 
 #include "board_configuration_data.h"

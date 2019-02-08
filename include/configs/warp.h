@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2014 O.S. Systems Software LTDA.
  * Copyright (C) 2014 Kynetics LLC.
@@ -6,8 +7,6 @@
  * Author: Otavio Salvador <otavio@ossystems.com.br>
  *
  * Configuration settings for the WaRP Board
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_H
@@ -35,7 +34,6 @@
 #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + SZ_256M)
 
 /* Physical Memory Map */
-#define CONFIG_NR_DRAM_BANKS		1
 #define PHYS_SDRAM			MMDC0_ARB_BASE_ADDR
 
 #define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
@@ -63,8 +61,6 @@
 #endif
 
 #define CONFIG_USBD_HS
-
-#define CONFIG_USB_FUNCTION_MASS_STORAGE
 
 #define CONFIG_SYS_DFU_DATA_BUF_SIZE SZ_16M
 #define DFU_DEFAULT_POLL_TIMEOUT 300

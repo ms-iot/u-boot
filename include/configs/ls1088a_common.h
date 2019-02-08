@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2017 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __LS1088_COMMON_H
@@ -18,13 +17,11 @@
 #define SPL_NO_SATA
 #define SPL_NO_QSPI
 #define SPL_NO_IFC
-#define CONFIG_SYS_DCACHE_OFF
 #undef CONFIG_DISPLAY_CPUINFO
 #endif
 
 #define CONFIG_REMAKE_ELF
 #define CONFIG_FSL_LAYERSCAPE
-#define CONFIG_MP
 
 #include <asm/arch/stream_id_lsch3.h>
 #include <asm/arch/config.h>
@@ -34,17 +31,6 @@
 #define CONFIG_SYS_INIT_SP_ADDR		(CONFIG_SYS_FSL_OCRAM_BASE + 0xfff0)
 
 /* Link Definitions */
-#ifdef CONFIG_SPL
-#define CONFIG_SYS_TEXT_BASE		0x80400000
-#else
-#ifdef CONFIG_QSPI_BOOT
-#define CONFIG_SYS_TEXT_BASE            0x20100000
-#else
-#define CONFIG_SYS_TEXT_BASE		0x30100000
-#endif
-#endif
-
-#define CONFIG_SUPPORT_RAW_INITRD
 
 #ifdef CONFIG_QSPI_BOOT
 #define CONFIG_SYS_FSL_QSPI_BASE	0x20000000
@@ -79,14 +65,8 @@
 
 /* I2C */
 #define CONFIG_SYS_I2C
-#define CONFIG_SYS_I2C_MXC
-#define CONFIG_SYS_I2C_MXC_I2C1		/* enable I2C bus 1 */
-#define CONFIG_SYS_I2C_MXC_I2C2		/* enable I2C bus 2 */
-#define CONFIG_SYS_I2C_MXC_I2C3		/* enable I2C bus 3 */
-#define CONFIG_SYS_I2C_MXC_I2C4		/* enable I2C bus 4 */
 
 /* Serial Port */
-#define CONFIG_CONS_INDEX       1
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_REG_SIZE     1
 #define CONFIG_SYS_NS16550_CLK          (get_bus_freq(0) / 2)
@@ -174,8 +154,6 @@ unsigned long long get_qixis_addr(void);
 
 /* SATA */
 #ifdef CONFIG_SCSI
-#define CONFIG_LIBATA
-#define CONFIG_SCSI_AHCI
 #define CONFIG_SCSI_AHCI_PLAT
 #define CONFIG_SYS_SATA1		AHCI_BASE_ADDR1
 
@@ -187,8 +165,6 @@ unsigned long long get_qixis_addr(void);
 
 /* Physical Memory Map */
 #define CONFIG_CHIP_SELECTS_PER_CTRL	4
-
-#define CONFIG_NR_DRAM_BANKS		2
 
 #define CONFIG_HWCONFIG
 #define HWCONFIG_BUFFER_SIZE		128
@@ -217,17 +193,17 @@ unsigned long long get_qixis_addr(void);
 
 #if defined(CONFIG_QSPI_BOOT)
 #define CONFIG_BOOTCOMMAND	"sf probe 0:0;" \
-				"sf read 0x80200000 0xd00000 0x100000;"\
-				" fsl_mc apply dpl 0x80200000 &&" \
+				"sf read 0x80001000 0xd00000 0x100000;"\
+				" fsl_mc lazyapply dpl 0x80001000 &&" \
 				" sf read $kernel_load $kernel_start" \
 				" $kernel_size && bootm $kernel_load"
 #elif defined(CONFIG_SD_BOOT)
-#define CONFIG_BOOTCOMMAND	"mmcinfo;mmc read 0x80200000 0x6800 0x800;"\
-				" fsl_mc apply dpl 0x80200000 &&" \
+#define CONFIG_BOOTCOMMAND	"mmcinfo;mmc read 0x80001000 0x6800 0x800;"\
+				" fsl_mc lazyapply dpl 0x80001000 &&" \
 				" mmc read $kernel_load $kernel_start" \
 				" $kernel_size && bootm $kernel_load"
 #else /* NOR BOOT*/
-#define CONFIG_BOOTCOMMAND	"fsl_mc apply dpl 0x580d00000 &&" \
+#define CONFIG_BOOTCOMMAND	"fsl_mc lazyapply dpl 0x580d00000 &&" \
 				" cp.b $kernel_start $kernel_load" \
 				" $kernel_size && bootm $kernel_load"
 #endif
@@ -237,21 +213,12 @@ unsigned long long get_qixis_addr(void);
 #define CONFIG_SYS_CBSIZE		512	/* Console I/O Buffer Size */
 #define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
 					sizeof(CONFIG_SYS_PROMPT) + 16)
-#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE /* Boot args buffer */
-#define CONFIG_SYS_LONGHELP
-#ifndef SPL_NO_ENV
-#define CONFIG_CMDLINE_EDITING		1
-#endif
-#define CONFIG_AUTO_COMPLETE
 #define CONFIG_SYS_MAXARGS		64	/* max command args */
-
-#define CONFIG_PANIC_HANG	/* do not reset board on panic */
 
 #ifdef CONFIG_SPL
 #define CONFIG_SPL_BSS_START_ADDR      0x80100000
 #define CONFIG_SPL_BSS_MAX_SIZE                0x00100000
-#define CONFIG_SPL_FRAMEWORK
 #define CONFIG_SPL_LDSCRIPT "arch/arm/cpu/armv8/u-boot-spl.lds"
 #define CONFIG_SPL_MAX_SIZE            0x16000
 #define CONFIG_SPL_STACK               (CONFIG_SYS_FSL_OCRAM_BASE + 0x9ff0)

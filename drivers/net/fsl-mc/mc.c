@@ -1,14 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014 Freescale Semiconductor, Inc.
  * Copyright 2017 NXP
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright 2017-2018 NXP
  */
 #include <common.h>
 #include <errno.h>
 #include <linux/bug.h>
 #include <asm/io.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <net.h>
 #include <fdt_support.h>
 #include <fsl-mc/fsl_mc.h>
@@ -30,6 +30,7 @@
 #define MC_BOOT_ENV_VAR		"mcinitcmd"
 
 DECLARE_GLOBAL_DATA_PTR;
+static int mc_memset_resv_ram;
 static int mc_boot_status = -1;
 static int mc_dpl_applied = -1;
 #ifdef CONFIG_SYS_LS_MC_DRAM_AIOP_IMG_OFFSET
@@ -291,15 +292,15 @@ void fdt_fsl_mc_fixup_iommu_map_entry(void *blob)
 	if (offset < 0)
 		offset = fdt_path_offset(blob, "/fsl-mc");
 	if (offset < 0) {
-		printf("%s: ERROR: fsl-mc node not found in device tree (error %d)\n",
-			__func__, offset);
+		printf("%s: fsl-mc: ERR: fsl-mc node not found in DT, err %d\n",
+		       __func__, offset);
 		return;
 	}
 
 	prop = fdt_getprop_w(blob, offset, "iommu-map", &lenp);
-	if (prop == NULL) {
-		debug("\n%s: ERROR: missing iommu-map in fsl-mc bus node\n",
-			__func__);
+	if (!prop) {
+		debug("%s: fsl-mc: ERR: missing iommu-map in fsl-mc bus node\n",
+		      __func__);
 		return;
 	}
 
@@ -310,7 +311,7 @@ void fdt_fsl_mc_fixup_iommu_map_entry(void *blob)
 		FSL_DPAA2_STREAM_ID_START + 1);
 
 	fdt_setprop_inplace(blob, offset, "iommu-map",
-		iommu_map, sizeof(iommu_map));
+			    iommu_map, sizeof(iommu_map));
 }
 
 static int mc_fixup_dpc_mac_addr(void *blob, int dpmac_id,
@@ -357,7 +358,7 @@ static int mc_fixup_dpc_mac_addr(void *blob, int dpmac_id,
 static int mc_fixup_mac_addrs(void *blob, enum mc_fixup_type type)
 {
 	int i, err = 0, ret = 0;
-	char ethname[10];
+	char ethname[ETH_NAME_LEN];
 	struct eth_device *eth_dev;
 
 	for (i = WRIOP1_DPMAC1; i < NUM_WRIOP_PORTS; i++) {
@@ -366,8 +367,8 @@ static int mc_fixup_mac_addrs(void *blob, enum mc_fixup_type type)
 		    (wriop_get_phy_address(i) == -1))
 			continue;
 
-		sprintf(ethname, "DPMAC%d@%s", i,
-			phy_interface_strings[wriop_get_enet_if(i)]);
+		snprintf(ethname, ETH_NAME_LEN, "DPMAC%d@%s", i,
+			 phy_interface_strings[wriop_get_enet_if(i)]);
 
 		eth_dev = eth_get_dev_by_name(ethname);
 		if (eth_dev == NULL)
@@ -844,6 +845,11 @@ int get_dpl_apply_status(void)
 u64 mc_get_dram_addr(void)
 {
 	size_t mc_ram_size = mc_get_dram_block_size();
+
+	if (!mc_memset_resv_ram || (get_mc_boot_status() < 0)) {
+		mc_memset_resv_ram = 1;
+		memset((void *)gd->arch.resv_ram, 0, mc_ram_size);
+	}
 
 	return (gd->arch.resv_ram + mc_ram_size - 1) &
 		MC_RAM_BASE_ADDR_ALIGNMENT_MASK;

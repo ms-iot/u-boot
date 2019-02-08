@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  *  EFI application loader
  *
  *  Copyright (c) 2017 Heinrich Schuchardt <xypron.glpk@gmx.de>
- *
- *  SPDX-License-Identifier:     GPL-2.0+
  */
 
 #ifndef _EFI_SELFTEST_H
@@ -12,10 +11,17 @@
 #include <common.h>
 #include <efi.h>
 #include <efi_api.h>
+#include <efi_loader.h>
 #include <linker_lists.h>
 
 #define EFI_ST_SUCCESS 0
 #define EFI_ST_FAILURE 1
+
+/*
+ * Prints a message.
+ */
+#define efi_st_printf(...) \
+	(efi_st_printc(-1, __VA_ARGS__))
 
 /*
  * Prints an error message.
@@ -23,8 +29,17 @@
  * @...	format string followed by fields to print
  */
 #define efi_st_error(...) \
-	(efi_st_printf("%s(%u):\nERROR: ", __FILE__, __LINE__), \
-	efi_st_printf(__VA_ARGS__)) \
+	(efi_st_printc(EFI_LIGHTRED, "%s(%u):\nERROR: ", __FILE__, __LINE__), \
+	efi_st_printc(EFI_LIGHTRED, __VA_ARGS__))
+
+/*
+ * Prints a TODO message.
+ *
+ * @...	format string followed by fields to print
+ */
+#define efi_st_todo(...) \
+	(efi_st_printc(EFI_YELLOW, "%s(%u):\nTODO: ", __FILE__, __LINE__), \
+	efi_st_printc(EFI_YELLOW, __VA_ARGS__)) \
 
 /*
  * A test may be setup and executed at boottime,
@@ -51,14 +66,15 @@ extern struct efi_simple_input_interface *con_in;
 void efi_st_exit_boot_services(void);
 
 /*
- * Print a pointer to an u16 string
+ * Print a colored message
  *
- * @pointer: pointer
- * @buf: pointer to buffer address
- * on return position of terminating zero word
+ * @color	color, see constants in efi_api.h, use -1 for no color
+ * @fmt		printf format
+ * @...		arguments to be printed
+ *		on return position of terminating zero word
  */
-void efi_st_printf(const char *fmt, ...)
-		 __attribute__ ((format (__printf__, 1, 2)));
+void efi_st_printc(int color, const char *fmt, ...)
+		 __attribute__ ((format (__printf__, 2, 3)));
 
 /*
  * Compare memory.
@@ -70,6 +86,15 @@ void efi_st_printf(const char *fmt, ...)
  * @return:	0 if both buffers contain the same bytes
  */
 int efi_st_memcmp(const void *buf1, const void *buf2, size_t length);
+
+/*
+ * Compare an u16 string to a char string.
+ *
+ * @buf1:	u16 string
+ * @buf2:	char string
+ * @return:	0 if both buffers contain the same bytes
+ */
+int efi_st_strcmp_16_8(const u16 *buf1, const char *buf2);
 
 /*
  * Reads an Unicode character from the input device.
@@ -88,6 +113,8 @@ u16 efi_st_get_key(void);
  * @setup:	set up the unit test
  * @teardown:	tear down the unit test
  * @execute:	execute the unit test
+ * @setup_ok:	setup was successful (set at runtime)
+ * @on_request:	test is only executed on request
  */
 struct efi_unit_test {
 	const char *name;
@@ -96,6 +123,8 @@ struct efi_unit_test {
 		     const struct efi_system_table *systable);
 	int (*execute)(void);
 	int (*teardown)(void);
+	int setup_ok;
+	bool on_request;
 };
 
 /* Declare a new EFI unit test */

@@ -274,6 +274,20 @@ int spl_init(void);
 void spl_board_init(void);
 #endif
 
+
+/**
+ * spl_board_provision() - Board specific function to provision the board during manufacturing
+ *
+ * The board specific function is responsible for querying platform fuses
+ * to dertermine if the board has been provisioned or not.
+ *
+ * Optionally these functions may communicate with an external host to configure the system with
+ * device specific information such as MAC address and serial number.
+ */
+#ifdef CONFIG_SPL_BOARD_PROVISION
+void spl_board_provision(void);
+#endif
+
 /**
  * spl_was_boot_source() - check if U-Boot booted from SPL
  *

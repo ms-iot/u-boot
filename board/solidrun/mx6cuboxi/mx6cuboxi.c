@@ -23,6 +23,7 @@
 #include <asm/mach-imx/iomux-v3.h>
 #include <asm/mach-imx/sata.h>
 #include <asm/mach-imx/video.h>
+#include <asm/mach-imx/hab.h>
 #include <mmc.h>
 #include <fsl_esdhc.h>
 #include <malloc.h>
@@ -34,6 +35,7 @@
 #include <spl.h>
 #include <usb.h>
 #include <usb/ehci-ci.h>
+#include <fuse.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -875,4 +877,113 @@ void board_init_f(ulong dummy)
 	/* load/boot image from boot device */
 	board_init_r(NULL, 0);
 }
+
+#ifdef CONFIG_SPL_BOARD_PROVISION
+
+struct srkfdt {
+	uint32_t srk0;
+	uint32_t srk1;
+	uint32_t srk2;
+	uint32_t srk3;
+	uint32_t srk4;
+	uint32_t srk5;
+	uint32_t srk6;
+	uint32_t srk7;
+};
+
+void spl_board_provision() {
+	u32 val, i;
+	u32 mac0, mac1;
+	char c;
+	char input[100];
+
+	hab_rvt_report_status_t *hab_rvt_report_status;
+	hab_rvt_report_status = (hab_rvt_report_status_t *)HAB_RVT_REPORT_STATUS;
+	enum hab_status status = 0;
+	enum hab_config config = 0;
+	enum hab_state state = 0;
+	status = hab_rvt_report_status(&config, &state);
+
+	printf("\nHAB Configuration: 0x%02x, HAB State: 0x%02x, HAB Status: 0x%02x\n",
+		config, state, status);
+
+	// System has secure booted, no need to run the provisioning flow
+	if (state == HAB_STATE_TRUSTED || state == HAB_STATE_SECURE) {
+		return;
+	}
+
+	const void* myfdt = (void*) gd_fdt_blob();
+	int srkhnode = fdt_subnode_offset(myfdt, 0, "srkh");
+	struct srkfdt *srkh = fdt_getprop(myfdt, srkhnode, "srkh-fuse", NULL);
+
+	if (srkh == NULL) {
+		printf("srkh-fuse node not found in fdt, unable to fuse HAB\n");
+	} else {
+		// FDT structure stores integers as Big-Endian
+		printf("FDT srk0: %08x\n", be32_to_cpu(srkh->srk0));
+		printf("FDT srk1: %08x\n", be32_to_cpu(srkh->srk1));
+		printf("FDT srk2: %08x\n", be32_to_cpu(srkh->srk2));
+		printf("FDT srk3: %08x\n", be32_to_cpu(srkh->srk3));
+		printf("FDT srk4: %08x\n", be32_to_cpu(srkh->srk4));
+		printf("FDT srk5: %08x\n", be32_to_cpu(srkh->srk5));
+		printf("FDT srk6: %08x\n", be32_to_cpu(srkh->srk6));
+		printf("FDT srk7: %08x\n", be32_to_cpu(srkh->srk7));
+
+#ifdef CONFIG_SPL_BOARD_PROVISION_FUSES
+		puts("Provisioning SRKH fuses\n");
+		fuse_prog(3, 0, be32_to_cpu(srkh->srk0));
+		fuse_prog(3, 1, be32_to_cpu(srkh->srk1));
+		fuse_prog(3, 2, be32_to_cpu(srkh->srk2));
+		fuse_prog(3, 3, be32_to_cpu(srkh->srk3));
+		fuse_prog(3, 4, be32_to_cpu(srkh->srk4));
+		fuse_prog(3, 5, be32_to_cpu(srkh->srk5));
+		fuse_prog(3, 6, be32_to_cpu(srkh->srk6));
+		fuse_prog(3, 7, be32_to_cpu(srkh->srk7));
+
+		//Set SoC to Closed security state to enforce HAB
+		fuse_prog(0, 6, 0x2);
+#else
+		puts("Set SPL_BOARD_PROVISION_FUSES to fuse SRKH\n");
+#endif
+	}
+
+	puts("MFG:reqmac\n");
+	c = '\0';
+	for(i = 0; c != '\n' && i < 100; i++) {
+		c = serial_getc();
+		input[i] = c;
+	}
+	puts("\n");
+	input[i] = '\0';
+	mac0 = simple_strtoul(input, NULL, 16);
+	printf("MAC0 recieved 0x%08x\n", mac0);
+
+	c = '\0';
+	for(i = 0; c != '\n' && i < 100; i++) {
+		c = serial_getc();
+		input[i] = c;
+	}
+	input[i] = '\0';
+	mac1 = simple_strtoul(input, NULL, 16);
+	printf("MAC1 recieved 0x%08x\n", mac1);
+
+	// Read MAC0 from fuses so we don't fuse if a MAC is already set.
+	fuse_sense(4, 2, &val);
+	if (val == 0) {
+#ifdef CONFIG_SPL_BOARD_PROVISION_FUSES
+		puts("Provisioning MAC fuses\n");
+		fuse_prog(4, 2, mac0);
+		fuse_prog(4, 3, mac1);
+#else
+		puts("Set SPL_BOARD_PROVISION_FUSES to fuse MAC address\n");
+#endif
+	} else {
+		puts("MAC address already fused on the platform\n");
+	}
+	puts("Device in provisioning mode and not High Assurance Booted. Resetting now!\n");
+	do_reset(NULL, 0, 0, NULL);
+}
+
+#endif
+
 #endif

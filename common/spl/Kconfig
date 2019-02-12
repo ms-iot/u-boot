@@ -43,6 +43,22 @@ config SPL_BOARD_INIT
 	  spl_board_init() from board_init_r(). This function should be
 	  provided by the board.
 
+config SPL_BOARD_PROVISION
+	bool "Call board-specific provisioning in SPL"
+	help
+	  If this option is enabled, U-Boot will call the function
+	  spl_board_provision() from board_init_r(). This function should be
+	  provided by the board.
+
+config SPL_BOARD_PROVISION_FUSES
+	bool "Allow spl_board_provision() to blow fuses"
+	depends on SPL_BOARD_PROVISION
+	help
+	  If this option is enabled then spl_board_provision() will blow fuses
+	  using the provisioning information it retrieves.
+	  Leaving this disabled is helpful for development to ensure you're
+	  preparing the correct values before making permanent fuse operations.
+
 config SPL_ENABLE_CACHES
 	bool "Enable caches in SPL"
 	help

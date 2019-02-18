@@ -209,7 +209,7 @@
 		"else " \
 			"booti; " \
 		"fi;\0"
-
+#ifndef CONFIG_BOOTCOMMAND
 #define CONFIG_BOOTCOMMAND \
 	   "mmc dev ${mmcdev}; if mmc rescan; then " \
 		   "if run loadbootscript; then " \
@@ -221,6 +221,7 @@
 			   "fi; " \
 		   "fi; " \
 	   "else booti ${loadaddr} - ${fdt_addr}; fi"
+#endif
 #endif
 
 /* Link Definitions */
@@ -263,10 +264,12 @@
 #define CONFIG_SYS_MEMTEST_START    PHYS_SDRAM
 #define CONFIG_SYS_MEMTEST_END      (CONFIG_SYS_MEMTEST_START + (PHYS_SDRAM_SIZE >> 1))
 
+#ifndef CONFIG_BAUDRATE
 #define CONFIG_BAUDRATE			115200
+#endif
 
 #define CONFIG_MXC_UART
-#define CONFIG_MXC_UART_BASE		UART2_BASE_ADDR
+#define CONFIG_MXC_UART_BASE		UART4_BASE_ADDR
 
 /* Monitor Command Prompt */
 #undef CONFIG_SYS_PROMPT

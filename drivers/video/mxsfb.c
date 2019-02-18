@@ -282,7 +282,7 @@ void *video_hw_init(void)
 
 	panel.memSize = mode.xres * mode.yres * panel.gdfBytesPP;
 
-
+#ifndef CONFIG_FB_ADDR
 	/* Allocate framebuffer */
 	fb = memalign(ARCH_DMA_MINALIGN,
 		      roundup(panel.memSize, ARCH_DMA_MINALIGN));
@@ -290,7 +290,9 @@ void *video_hw_init(void)
 		printf("MXSFB: Error allocating framebuffer!\n");
 		return NULL;
 	}
-
+#else
+	fb = (void *)CONFIG_FB_ADDR;
+#endif
 	/* Wipe framebuffer */
 	memset(fb, 0, panel.memSize);
 

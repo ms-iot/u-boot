@@ -666,8 +666,13 @@ void *video_hw_init(void)
 	panel.gdfIndex = GDF_32BIT_X888RGB;
 	panel.memSize = gmode.xres * gmode.yres * panel.gdfBytesPP;
 
+#ifndef CONFIG_FB_ADDR
 	/* Allocate framebuffer */
 	fb = memalign(0x1000, roundup(panel.memSize, 0x1000));
+#else
+	fb = (void *)CONFIG_FB_ADDR;
+#endif
+
 	debug("%s(): fb %p\n", __func__, fb);
 	if (!fb) {
 		printf("%s, %s(): Error allocating framebuffer!\n",

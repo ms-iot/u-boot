@@ -174,8 +174,8 @@ static int do_psci_cpu_suspend(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 
 	power_state = simple_strtoul(argv[1], NULL, 16);
 
-	//gpt_init();
-	//gpt_schedule_interrupt(5000);
+	gpt_init();
+	gpt_schedule_interrupt(5000);
 
 	entry = (uint32_t)psci_resume;
 	context_id = 0xABCD1234;

@@ -20,6 +20,7 @@
 #define CONFIG_SYS_MALLOC_LEN		(32 * SZ_1M)
 
 /* Network */
+#if 0 /* disable network for power measurements */
 #define CONFIG_FEC_MXC
 #define CONFIG_FEC_XCV_TYPE             RGMII
 #define CONFIG_ETHPRIME                 "FEC"
@@ -28,6 +29,7 @@
 #define CONFIG_PHY_BROADCOM
 /* ENET1 */
 #define IMX_FEC_BASE			ENET_IPS_BASE_ADDR
+#endif
 
 /* MMC Config*/
 #define CONFIG_SYS_FSL_ESDHC_ADDR       0
@@ -163,6 +165,15 @@
 		   "fi; " \
 	   "else run netboot; fi"
 #endif /* !defined(CONFIG_BOOTCOMMAND) */
+
+/* Put off-SOC chips in power down to facilitate power measurements */
+#define CONFIG_PREBOOT \
+	"usb start; " \
+	"gpio clear gpio_spi@0_5; " \
+	"gpio clear gpio_spi@0_2; " \
+	"gpio clear gpio_spi@0_4; " \
+	"gpio clear GPIO4_23; " \
+	"gpio clear GPIO4_21;"
 
 #define CONFIG_SYS_MEMTEST_START	0x80000000
 #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 0x20000000)

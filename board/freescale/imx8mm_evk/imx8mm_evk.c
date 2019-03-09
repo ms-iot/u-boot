@@ -34,6 +34,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define UART_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_FSEL1)
 #define WDOG_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_ODE | PAD_CTL_PUE | PAD_CTL_PE)
+#define I2C_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_HYS | PAD_CTL_PUE | PAD_CTL_PE)
 
 static iomux_v3_cfg_t const uart_pads[] = {
 	IMX8MM_PAD_UART2_RXD_UART2_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
@@ -44,6 +45,32 @@ static iomux_v3_cfg_t const uart_pads[] = {
 
 static iomux_v3_cfg_t const wdog_pads[] = {
 	IMX8MM_PAD_GPIO1_IO02_WDOG1_WDOG_B  | MUX_PAD_CTRL(WDOG_PAD_CTRL),
+};
+
+struct i2c_pads_info i2c_pad_info2 = {
+	.scl = {
+		.i2c_mode = IMX8MM_PAD_I2C2_SCL_I2C2_SCL | MUX_PAD_CTRL(I2C_PAD_CTRL) | MUX_MODE_SION,
+		.gpio_mode = IMX8MM_PAD_I2C2_SCL_GPIO5_IO16 | MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gp = IMX_GPIO_NR(5, 16),
+	},
+	.sda = {
+		.i2c_mode = IMX8MM_PAD_I2C2_SDA_I2C2_SDA | MUX_PAD_CTRL(I2C_PAD_CTRL) | MUX_MODE_SION,
+		.gpio_mode = IMX8MM_PAD_I2C2_SDA_GPIO5_IO17 | MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gp = IMX_GPIO_NR(5, 17),
+	},
+};
+
+struct i2c_pads_info i2c_pad_info3 = {
+	.scl = {
+		.i2c_mode = IMX8MM_PAD_I2C3_SCL_I2C3_SCL | MUX_PAD_CTRL(I2C_PAD_CTRL) | MUX_MODE_SION,
+		.gpio_mode = IMX8MM_PAD_I2C3_SCL_GPIO5_IO18 | MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gp = IMX_GPIO_NR(5, 18),
+	},
+	.sda = {
+		.i2c_mode = IMX8MM_PAD_I2C3_SDA_I2C3_SDA | MUX_PAD_CTRL(I2C_PAD_CTRL) | MUX_MODE_SION,
+		.gpio_mode = IMX8MM_PAD_I2C3_SDA_GPIO5_IO19 | MUX_PAD_CTRL(I2C_PAD_CTRL),
+		.gp = IMX_GPIO_NR(5, 19),
+	},
 };
 
 #ifdef CONFIG_FSL_FSPI
@@ -409,6 +436,10 @@ int board_init(void)
 #ifdef CONFIG_FSL_FSPI
 	board_qspi_init();
 #endif
+
+	/* I2C initialization */
+	setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info2);
+	setup_i2c(2, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info3);
 
 	return 0;
 }

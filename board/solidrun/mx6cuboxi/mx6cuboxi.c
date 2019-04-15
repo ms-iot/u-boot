@@ -893,19 +893,16 @@ struct srkfdt {
 
 void spl_board_provision() {
 	u32 val, i;
-	u32 mac0, mac1;
-	char c;
-	char input[100];
+	u32 checksum, mac0, mac1;
+	char *input;
 
 	hab_rvt_report_status_t *hab_rvt_report_status;
 	hab_rvt_report_status = (hab_rvt_report_status_t *)HAB_RVT_REPORT_STATUS;
-	enum hab_status status = 0;
 	enum hab_config config = 0;
 	enum hab_state state = 0;
-	status = hab_rvt_report_status(&config, &state);
-
-	printf("\nHAB Configuration: 0x%02x, HAB State: 0x%02x, HAB Status: 0x%02x\n",
-		config, state, status);
+	hab_rvt_report_status(&config, &state);
+	printf("\nHAB Configuration: 0x%02x, HAB State: 0x%02x\n",
+		config, state);
 
 	// System has secure booted, no need to run the provisioning flow
 	if (state == HAB_STATE_TRUSTED || state == HAB_STATE_SECURE) {
@@ -948,24 +945,38 @@ void spl_board_provision() {
 	}
 
 	puts("MFG:reqmac\n");
-	c = '\0';
-	for(i = 0; c != '\n' && i < 100; i++) {
-		c = serial_getc();
-		input[i] = c;
-	}
-	puts("\n");
-	input[i] = '\0';
-	mac0 = simple_strtoul(input, NULL, 16);
-	printf("MAC0 recieved 0x%08x\n", mac0);
 
-	c = '\0';
-	for(i = 0; c != '\n' && i < 100; i++) {
-		c = serial_getc();
-		input[i] = c;
+	// Give the host 100 miliseconds to respond before pausing for 5 seconds
+	udelay(100000);
+	if (serial_tstc() == 0) {
+		udelay(5000000);
+		if (serial_tstc() == 0) {
+			puts("MFGF:mac\n");
+			while(1);
+		}
 	}
-	input[i] = '\0';
-	mac1 = simple_strtoul(input, NULL, 16);
-	printf("MAC1 recieved 0x%08x\n", mac1);
+
+	input = (char*)&mac0;
+	for(i = 0; i < 4; i++) {
+		input[i] = serial_getc();
+	}
+	input = (char*)&mac1;
+	for(i = 0; i < 4; i++) {
+		input[i] = serial_getc();
+	}
+	input = (char*)&checksum;
+	for(i = 0; i < 4; i++) {
+		input[i] = serial_getc();
+	}
+
+	printf("MAC0 received 0x%08x\n", mac0);
+	printf("MAC1 received 0x%08x\n", mac1);
+
+	// Send failure to host and halt if checksum or mac1 error.
+	if ((checksum != (mac0 + mac1)) || (mac1 & 0xFFFF0000)) {
+		puts("MFGF:mac\n");
+		while(1);
+	}
 
 	// Read MAC0 from fuses so we don't fuse if a MAC is already set.
 	fuse_sense(4, 2, &val);

@@ -83,6 +83,7 @@ config MX6UL_OPOS6UL
 
 config MX6ULL
 	bool
+	select HAS_CAAM
 	select ROM_UNIFIED_SECTIONS
 	select SYSCOUNTER_TIMER
 	select SYS_L2CACHE_OFF
@@ -411,6 +412,15 @@ config TARGET_MX6VAB820
 	select DM_THERMAL
 	select BOARD_EARLY_INIT_F
 
+config TARGET_IMX6ULL_14X14_EVK
+	bool "Support imx6ull_14x14_evk"
+	select BOARD_LATE_INIT
+	select MX6ULL
+	select DM
+	select DM_THERMAL
+	select SUPPORT_SPL
+	select BOARD_EARLY_INIT_F
+
 config TARGET_NITROGEN6X
 	bool "nitrogen6x"
 	imply USB_ETHER_ASIX
@@ -576,6 +586,7 @@ source "board/freescale/mx6sxsabresd/Kconfig"
 source "board/freescale/mx6sxsabreauto/Kconfig"
 source "board/freescale/mx6ul_14x14_evk/Kconfig"
 source "board/freescale/mx6ullevk/Kconfig"
+source "board/freescale/imx6ull_14x14_evk/Kconfig"
 source "board/grinn/liteboard/Kconfig"
 source "board/phytec/pcm058/Kconfig"
 source "board/phytec/pfla02/Kconfig"

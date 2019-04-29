@@ -73,6 +73,7 @@ static iomux_v3_cfg_t const uart_pads[] = {
 	IMX8MQ_PAD_UART2_TXD__UART2_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
 };
 
+#ifdef CONFIG_SYS_I2C_MXC
 struct i2c_pads_info i2c_pad_info2 = {
 	.scl = {
 		.i2c_mode = IMX8MQ_PAD_I2C2_SCL__I2C2_SCL | MUX_PAD_CTRL(I2C_PAD_CTRL),
@@ -98,6 +99,7 @@ struct i2c_pads_info i2c_pad_info3 = {
 		.gp = IMX_GPIO_NR(5, 19),
 	},
 };
+#endif
 
 int board_early_init_f(void)
 {
@@ -345,9 +347,10 @@ int board_init(void)
 	setup_typec();
 #endif
 
-	/* I2C initialization */
+#ifdef CONFIG_SYS_I2C_MXC
 	setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info2);
 	setup_i2c(2, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info3);
+#endif
 
 	return 0;
 }

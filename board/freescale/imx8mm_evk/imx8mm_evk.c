@@ -47,6 +47,7 @@ static iomux_v3_cfg_t const wdog_pads[] = {
 	IMX8MM_PAD_GPIO1_IO02_WDOG1_WDOG_B  | MUX_PAD_CTRL(WDOG_PAD_CTRL),
 };
 
+#ifdef CONFIG_SYS_I2C_MXC
 struct i2c_pads_info i2c_pad_info2 = {
 	.scl = {
 		.i2c_mode = IMX8MM_PAD_I2C2_SCL_I2C2_SCL | MUX_PAD_CTRL(I2C_PAD_CTRL) | MUX_MODE_SION,
@@ -72,6 +73,7 @@ struct i2c_pads_info i2c_pad_info3 = {
 		.gp = IMX_GPIO_NR(5, 19),
 	},
 };
+#endif
 
 #ifdef CONFIG_FSL_FSPI
 #define QSPI_PAD_CTRL	(PAD_CTL_DSE2 | PAD_CTL_HYS)
@@ -438,9 +440,10 @@ int board_init(void)
 	board_qspi_init();
 #endif
 
-	/* I2C initialization */
+#ifdef CONFIG_SYS_I2C_MXC
 	setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info2);
 	setup_i2c(2, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info3);
+#endif
 
 	return 0;
 }

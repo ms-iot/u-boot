@@ -1,5 +1,5 @@
 trigger:
-- ms-iot
+- u-boot-imx
 
 jobs:
   - job: Build67

@@ -15,7 +15,7 @@
  * Reserve secure memory
  * To be aligned with MMU block size
  */
-#define CONFIG_SYS_MEM_RESERVE_SECURE	(66 * 1024 * 1024)	/* 66MB */
+#define CONFIG_SYS_MEM_RESERVE_SECURE	(258 * 1024 * 1024)	/* 258MB */
 #define SPL_TLB_SETBACK	0x1000000	/* 16MB under effective memory top */
 
 #ifdef CONFIG_ARCH_LS2080A

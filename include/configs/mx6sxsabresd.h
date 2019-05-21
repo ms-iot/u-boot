@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2014 Freescale Semiconductor, Inc.
+ * Copyright 2019 NXP
  *
  * Configuration settings for the Freescale i.MX6SX Sabresd board.
  */
@@ -15,7 +16,7 @@
 #endif
 
 /* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(3 * SZ_1M)
+#define CONFIG_SYS_MALLOC_LEN		(32 * SZ_1M)
 
 #define CONFIG_MXC_UART
 #define CONFIG_MXC_UART_BASE		UART1_BASE
@@ -109,6 +110,7 @@
 		"if test test $board_rev = REVA ; then " \
 			"setenv fdt_file imx6sx-sdb-reva.dtb; fi; " \
 
+#if !defined(CONFIG_BOOTCOMMAND)
 #define CONFIG_BOOTCOMMAND \
 	   "run findfdt; " \
 	   "mmc dev ${mmcdev}; if mmc rescan; then " \
@@ -121,6 +123,7 @@
 			   "fi; " \
 		   "fi; " \
 	   "else run netboot; fi"
+#endif /* !defined(CONFIG_BOOTCOMMAND) */
 
 /* Miscellaneous configurable options */
 #define CONFIG_SYS_MEMTEST_START	0x80000000
@@ -199,7 +202,7 @@
 #define CONFIG_BMP_16BPP
 #define CONFIG_VIDEO_BMP_RLE8
 #define CONFIG_VIDEO_BMP_LOGO
-#define MXS_LCDIF_BASE MX6SX_LCDIF1_BASE_ADDR
+#define CONFIG_IMX_VIDEO_SKIP
 #endif
 #endif
 

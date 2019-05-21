@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2014 Freescale Semiconductor, Inc.
+ * Copyright 2019 NXP
  *
  * Author: Fabio Estevam <fabio.estevam@freescale.com>
  */
@@ -15,6 +16,7 @@
 #include <asm/mach-imx/iomux-v3.h>
 #include <asm/io.h>
 #include <asm/mach-imx/mxc_i2c.h>
+#include <asm/mach-imx/video.h>
 #include <linux/sizes.h>
 #include <common.h>
 #include <fsl_esdhc.h>
@@ -99,6 +101,13 @@ static iomux_v3_cfg_t const phy_control_pads[] = {
 	MX6_PAD_ENET2_CRS__GPIO2_IO_7 | MUX_PAD_CTRL(NO_PAD_CTRL),
 };
 
+#if defined(CONFIG_MULTI_DTB_FIT) || defined(CONFIG_SPL_LOAD_FIT)
+int board_fit_config_name_match(const char *name)
+{
+	return 0;
+}
+#endif
+
 static void setup_iomux_uart(void)
 {
 	imx_iomux_v3_setup_multiple_pads(uart1_pads, ARRAY_SIZE(uart1_pads));
@@ -139,10 +148,19 @@ static int setup_fec(void)
 
 int board_eth_init(bd_t *bis)
 {
+	int ret;
+
 	imx_iomux_v3_setup_multiple_pads(fec1_pads, ARRAY_SIZE(fec1_pads));
 	setup_fec();
 
-	return cpu_eth_init(bis);
+	ret = cpu_eth_init(bis);
+	if (!(ret)) {
+		ret = fecmxc_initialize_multi(bis, 1, 1, IMX_FEC_BASE);
+		if (ret) {
+			printf("FEC%d MXC: %s:failed\n", 1, __func__);
+		}
+	}
+	return ret;
 }
 
 int power_init_board(void)
@@ -215,6 +233,14 @@ int board_qspi_init(void)
 #endif
 
 #ifdef CONFIG_VIDEO_MXS
+static iomux_v3_cfg_t const lvds_ctrl_pads[] = {
+	/* CABC enable */
+	MX6_PAD_QSPI1A_DATA2__GPIO4_IO_18 | MUX_PAD_CTRL(NO_PAD_CTRL),
+
+	/* Use GPIO for Brightness adjustment, duty cycle = period */
+	MX6_PAD_SD1_DATA1__GPIO6_IO_3 | MUX_PAD_CTRL(NO_PAD_CTRL),
+};
+
 static iomux_v3_cfg_t const lcd_pads[] = {
 	MX6_PAD_LCD1_CLK__LCDIF1_CLK | MUX_PAD_CTRL(LCD_PAD_CTRL),
 	MX6_PAD_LCD1_ENABLE__LCDIF1_ENABLE | MUX_PAD_CTRL(LCD_PAD_CTRL),
@@ -250,7 +276,7 @@ static iomux_v3_cfg_t const lcd_pads[] = {
 	MX6_PAD_SD1_DATA2__GPIO6_IO_4 | MUX_PAD_CTRL(NO_PAD_CTRL),
 };
 
-static int setup_lcd(void)
+static void setup_lcd(struct display_info_t const *dev)
 {
 	enable_lcdif_clock(LCDIF1_BASE_ADDR, 1);
 
@@ -265,9 +291,76 @@ static int setup_lcd(void)
 	/* Set Brightness to high */
 	gpio_request(IMX_GPIO_NR(6, 4), "lcd_bright");
 	gpio_direction_output(IMX_GPIO_NR(6, 4) , 1);
-
-	return 0;
 }
+
+static void enable_lvds(struct display_info_t const *dev)
+{
+	int ret;
+
+	ret = enable_lcdif_clock(dev->bus, 1);
+	if (ret) {
+		printf("Enable LCDIF clock failed, %d\n", ret);
+		return;
+	}
+	ret = enable_lvds_bridge(dev->bus);
+	if (ret) {
+		printf("Enable LVDS bridge failed, %d\n", ret);
+		return;
+	}
+
+	imx_iomux_v3_setup_multiple_pads(lvds_ctrl_pads,
+							ARRAY_SIZE(lvds_ctrl_pads));
+
+	/* Enable CABC */
+	gpio_request(IMX_GPIO_NR(4, 18), "CABC enable");
+	gpio_direction_output(IMX_GPIO_NR(4, 18) , 1);
+
+	/* Set Brightness to high */
+	gpio_request(IMX_GPIO_NR(6, 3), "lvds backlight");
+	gpio_direction_output(IMX_GPIO_NR(6, 3) , 1);
+}
+
+struct display_info_t const displays[] = {{
+	.bus	= LCDIF2_BASE_ADDR,
+	.addr	= 0,
+	.pixfmt	= 18,
+	.detect	= NULL,
+	.enable	= enable_lvds,
+	.mode	= {
+		.name           = "Hannstar-XGA",
+		.refresh        = 60,
+		.xres           = 1024,
+		.yres           = 768,
+		.pixclock       = 15384,
+		.left_margin    = 160,
+		.right_margin   = 24,
+		.upper_margin   = 29,
+		.lower_margin   = 3,
+		.hsync_len      = 136,
+		.vsync_len      = 6,
+		.sync           = FB_SYNC_EXT,
+		.vmode          = FB_VMODE_NONINTERLACED
+} }, {
+	.bus = MX6SX_LCDIF1_BASE_ADDR,
+	.addr = 0,
+	.pixfmt = 24,
+	.detect = NULL,
+	.enable	= setup_lcd,
+	.mode	= {
+		.name			= "MCIMX28LCD",
+		.xres           = 800,
+		.yres           = 480,
+		.pixclock       = 29850,
+		.left_margin    = 89,
+		.right_margin   = 164,
+		.upper_margin   = 23,
+		.lower_margin   = 10,
+		.hsync_len      = 10,
+		.vsync_len      = 10,
+		.sync           = 0,
+		.vmode          = FB_VMODE_NONINTERLACED
+} } };
+size_t display_count = ARRAY_SIZE(displays);
 #endif
 
 int board_init(void)
@@ -290,10 +383,6 @@ int board_init(void)
 
 #ifdef CONFIG_FSL_QSPI
 	board_qspi_init();
-#endif
-
-#ifdef CONFIG_VIDEO_MXS
-	setup_lcd();
 #endif
 
 	return 0;

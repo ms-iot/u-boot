@@ -156,9 +156,8 @@ int board_eth_init(bd_t *bis)
 	ret = cpu_eth_init(bis);
 	if (!(ret)) {
 		ret = fecmxc_initialize_multi(bis, 1, 1, IMX_FEC_BASE);
-		if (ret) {
+		if (ret)
 			printf("FEC%d MXC: %s:failed\n", 1, __func__);
-		}
 	}
 	return ret;
 }
@@ -309,15 +308,15 @@ static void enable_lvds(struct display_info_t const *dev)
 	}
 
 	imx_iomux_v3_setup_multiple_pads(lvds_ctrl_pads,
-							ARRAY_SIZE(lvds_ctrl_pads));
+					 ARRAY_SIZE(lvds_ctrl_pads));
 
 	/* Enable CABC */
 	gpio_request(IMX_GPIO_NR(4, 18), "CABC enable");
-	gpio_direction_output(IMX_GPIO_NR(4, 18) , 1);
+	gpio_direction_output(IMX_GPIO_NR(4, 18), 1);
 
 	/* Set Brightness to high */
 	gpio_request(IMX_GPIO_NR(6, 3), "lvds backlight");
-	gpio_direction_output(IMX_GPIO_NR(6, 3) , 1);
+	gpio_direction_output(IMX_GPIO_NR(6, 3), 1);
 }
 
 struct display_info_t const displays[] = {{

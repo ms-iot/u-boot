@@ -6,7 +6,7 @@
 
 #if defined(CONFIG_VIDEO_MXS)
 int mxs_lcd_panel_setup(struct fb_videomode mode, int bpp,
-	uint32_t base_addr);
+			uint32_t base_addr);
 #endif
 
 int board_video_skip(void)
@@ -42,8 +42,8 @@ int board_video_skip(void)
 				    displays[i].pixfmt);
 #elif defined(CONFIG_VIDEO_MXS)
 		ret = mxs_lcd_panel_setup(displays[i].mode,
-					displays[i].pixfmt,
-				    displays[i].bus);
+					  displays[i].pixfmt,
+					  displays[i].bus);
 #endif
 		if (!ret) {
 			if (displays[i].enable)

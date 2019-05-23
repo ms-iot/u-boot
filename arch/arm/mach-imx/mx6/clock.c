@@ -857,8 +857,8 @@ int enable_lvds_bridge(u32 lcd_base_addr)
 	struct iomuxc *iomux = (struct iomuxc *)IOMUXC_BASE_ADDR;
 
 	if (is_cpu_type(MXC_CPU_MX6SX)) {
-		if ((lcd_base_addr != LCDIF1_BASE_ADDR) &&
-		    (lcd_base_addr != LCDIF2_BASE_ADDR)) {
+		if (lcd_base_addr != LCDIF1_BASE_ADDR &&
+		    lcd_base_addr != LCDIF2_BASE_ADDR) {
 			puts("Wrong LCD interface!\n");
 			return -EINVAL;
 		}

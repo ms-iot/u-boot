@@ -41,7 +41,7 @@ static struct fb_videomode fbmode;
 static int depth;
 
 int mxs_lcd_panel_setup(struct fb_videomode mode, int bpp,
-	uint32_t base_addr)
+			uint32_t base_addr)
 {
 	fbmode = mode;
 	depth  = bpp;
@@ -70,7 +70,8 @@ static void mxs_lcd_init(GraphicDevice *panel,
 #ifdef MXS_LCDIF_BASE
 	struct mxs_lcdif_regs *regs = (struct mxs_lcdif_regs *)MXS_LCDIF_BASE;
 #else
-	struct mxs_lcdif_regs *regs = (struct mxs_lcdif_regs *)(ulong)panel->isaBase;
+	struct mxs_lcdif_regs *regs =
+		(struct mxs_lcdif_regs *)(ulong)panel->isaBase;
 #endif
 	uint32_t word_len = 0, bus_width = 0;
 	uint8_t valid_data = 0;
@@ -161,7 +162,8 @@ void lcdif_power_down(void)
 #ifdef MXS_LCDIF_BASE
 	struct mxs_lcdif_regs *regs = (struct mxs_lcdif_regs *)MXS_LCDIF_BASE;
 #else
-	struct mxs_lcdif_regs *regs = (struct mxs_lcdif_regs *)(ulong)(panel.isaBase);
+	struct mxs_lcdif_regs *regs =
+		(struct mxs_lcdif_regs *)(ulong)(panel.isaBase);
 #endif
 	int timeout = 1000000;
 

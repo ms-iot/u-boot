@@ -3,6 +3,7 @@
  * Freescale i.MX23/i.MX28 LCDIF driver
  *
  * Copyright (C) 2011-2013 Marek Vasut <marex@denx.de>
+ * Copyright 2019 NXP
  */
 #include <common.h>
 #include <malloc.h>
@@ -17,6 +18,7 @@
 #include <asm/mach-imx/dma.h>
 
 #include "videomodes.h"
+#include <linux/fb.h>
 
 #define	PS2KHZ(ps)	(1000000000UL / (ps))
 
@@ -34,6 +36,22 @@ __weak void mxsfb_system_setup(void)
 {
 }
 
+static int setup;
+static struct fb_videomode fbmode;
+static int depth;
+
+int mxs_lcd_panel_setup(struct fb_videomode mode, int bpp,
+			uint32_t base_addr)
+{
+	fbmode = mode;
+	depth  = bpp;
+	panel.isaBase  = base_addr;
+
+	setup = 1;
+
+	return 0;
+}
+
 /*
  * ARIES M28EVK:
  * setenv videomode
@@ -49,12 +67,21 @@ __weak void mxsfb_system_setup(void)
 static void mxs_lcd_init(GraphicDevice *panel,
 			struct ctfb_res_modes *mode, int bpp)
 {
+#ifdef MXS_LCDIF_BASE
 	struct mxs_lcdif_regs *regs = (struct mxs_lcdif_regs *)MXS_LCDIF_BASE;
+#else
+	struct mxs_lcdif_regs *regs =
+		(struct mxs_lcdif_regs *)(ulong)panel->isaBase;
+#endif
 	uint32_t word_len = 0, bus_width = 0;
 	uint8_t valid_data = 0;
 
 	/* Kick in the LCDIF clock */
+#ifdef MXS_LCDIF_BASE
 	mxs_set_lcdclk(MXS_LCDIF_BASE, PS2KHZ(mode->pixclock));
+#else
+	mxs_set_lcdclk(panel->isaBase, PS2KHZ(mode->pixclock));
+#endif
 
 	/* Restart the LCDIF block */
 	mxs_reset_block(&regs->hw_lcdif_ctrl_reg);
@@ -132,7 +159,12 @@ static void mxs_lcd_init(GraphicDevice *panel,
 
 void lcdif_power_down(void)
 {
+#ifdef MXS_LCDIF_BASE
 	struct mxs_lcdif_regs *regs = (struct mxs_lcdif_regs *)MXS_LCDIF_BASE;
+#else
+	struct mxs_lcdif_regs *regs =
+		(struct mxs_lcdif_regs *)(ulong)(panel.isaBase);
+#endif
 	int timeout = 1000000;
 
 	if (!panel.frameAdrs)
@@ -159,14 +191,29 @@ void *video_hw_init(void)
 
 	puts("Video: ");
 
-	/* Suck display configuration from "videomode" variable */
-	penv = env_get("videomode");
-	if (!penv) {
-		puts("MXSFB: 'videomode' variable not set!\n");
-		return NULL;
-	}
+	if (!setup) {
+		/* Suck display configuration from "videomode" variable */
+		penv = env_get("videomode");
+		if (!penv) {
+			puts("MXSFB: 'videomode' variable not set!\n");
+			return NULL;
+		}
 
-	bpp = video_get_params(&mode, penv);
+		bpp = video_get_params(&mode, penv);
+	} else {
+		mode.xres = fbmode.xres;
+		mode.yres = fbmode.yres;
+		mode.pixclock = fbmode.pixclock;
+		mode.left_margin = fbmode.left_margin;
+		mode.right_margin = fbmode.right_margin;
+		mode.upper_margin = fbmode.upper_margin;
+		mode.lower_margin = fbmode.lower_margin;
+		mode.hsync_len = fbmode.hsync_len;
+		mode.vsync_len = fbmode.vsync_len;
+		mode.sync = fbmode.sync;
+		mode.vmode = fbmode.vmode;
+		bpp = depth;
+	}
 
 	/* fill in Graphic device struct */
 	sprintf(panel.modeIdent, "%dx%dx%d",

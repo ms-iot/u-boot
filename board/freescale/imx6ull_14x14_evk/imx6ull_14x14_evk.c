@@ -61,6 +61,9 @@ DECLARE_GLOBAL_DATA_PTR;
 #define LCD_PAD_CTRL    (PAD_CTL_HYS | PAD_CTL_PUS_100K_UP | PAD_CTL_PUE | \
 	PAD_CTL_PKE | PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm)
 
+#define LCD_CLK_PAD_CTRL (PAD_CTL_HYS | PAD_CTL_PUS_100K_UP | PAD_CTL_PUE | \
+       PAD_CTL_PKE | PAD_CTL_SPEED_MED | PAD_CTL_DSE_240ohm)
+
 #define MDIO_PAD_CTRL  (PAD_CTL_PUS_100K_UP | PAD_CTL_PUE |     \
 	PAD_CTL_DSE_48ohm   | PAD_CTL_SRE_FAST | PAD_CTL_ODE)
 
@@ -146,6 +149,11 @@ static enum qn_func qn_output[8] = {
 static void iox74lv_init(void)
 {
 	int i;
+
+        gpio_request(IOX_OE, "iox oe");
+        gpio_request(IOX_SDI, "iox sdi");
+        gpio_request(IOX_SHCP, "iox shcp");
+        gpio_request(IOX_STCP, "iox stcp");
 
 	gpio_direction_output(IOX_OE, 0);
 
@@ -765,7 +773,7 @@ int board_phy_config(struct phy_device *phydev)
 
 #ifdef CONFIG_VIDEO_MXS
 static iomux_v3_cfg_t const lcd_pads[] = {
-	MX6_PAD_LCD_CLK__LCDIF_CLK | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX6_PAD_LCD_CLK__LCDIF_CLK | MUX_PAD_CTRL(LCD_CLK_PAD_CTRL),
 	MX6_PAD_LCD_ENABLE__LCDIF_ENABLE | MUX_PAD_CTRL(LCD_PAD_CTRL),
 	MX6_PAD_LCD_HSYNC__LCDIF_HSYNC | MUX_PAD_CTRL(LCD_PAD_CTRL),
 	MX6_PAD_LCD_VSYNC__LCDIF_VSYNC | MUX_PAD_CTRL(LCD_PAD_CTRL),
@@ -801,21 +809,22 @@ static iomux_v3_cfg_t const lcd_pads[] = {
 	MX6_PAD_GPIO1_IO08__GPIO1_IO08 | MUX_PAD_CTRL(NO_PAD_CTRL),
 };
 
-static int setup_lcd(void)
+void do_enable_parallel_lcd(struct display_info_t const *dev)
 {
-	enable_lcdif_clock(LCDIF1_BASE_ADDR, 1);
+        enable_lcdif_clock(dev->bus, 1);
 
 	imx_iomux_v3_setup_multiple_pads(lcd_pads, ARRAY_SIZE(lcd_pads));
 
 	/* Reset the LCD */
+        gpio_request(IMX_GPIO_NR(5, 9), "lcd reset");
 	gpio_direction_output(IMX_GPIO_NR(5, 9), 0);
 	udelay(500);
 	gpio_direction_output(IMX_GPIO_NR(5, 9), 1);
 
 	/* Set Brightness to high */
+        gpio_request(IMX_GPIO_NR(1, 8), "backlight");
 	gpio_direction_output(IMX_GPIO_NR(1, 8), 1);
 
-	return 0;
 }
 
 struct display_info_t const displays[] = {{
@@ -875,10 +884,6 @@ int board_init(void)
 
 #ifdef CONFIG_NAND_MXS
 	setup_gpmi_nand();
-#endif
-
-#ifdef CONFIG_VIDEO_MXS
-	setup_lcd();
 #endif
 
 	return 0;

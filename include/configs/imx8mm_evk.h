@@ -269,7 +269,7 @@
 #endif
 
 #define CONFIG_MXC_UART
-#define CONFIG_MXC_UART_BASE		UART4_BASE_ADDR
+#define CONFIG_MXC_UART_BASE		UART2_BASE_ADDR
 
 /* Monitor Command Prompt */
 #undef CONFIG_SYS_PROMPT

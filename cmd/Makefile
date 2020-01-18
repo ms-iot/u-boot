@@ -157,6 +157,8 @@ obj-$(CONFIG_CMD_AXI) += axi.o
 # Power
 obj-$(CONFIG_CMD_PMIC) += pmic.o
 obj-$(CONFIG_CMD_REGULATOR) += regulator.o
+obj-y += psci.o
+obj-y += psci_resume.o
 
 obj-$(CONFIG_CMD_BLOB) += blob.o
 
